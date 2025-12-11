@@ -81,7 +81,17 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                         </ul>
                     </div>
                     
-                    <a href="<?php echo SITE_URL; ?>/client/profile.php" class="btn btn-outline-secondary me-2">My Profile</a>
+                    <?php
+                        $profile_url = SITE_URL . '/dashboard.php'; // Default
+                        if (is_client()) {
+                            $profile_url = SITE_URL . '/client/profile.php';
+                        } elseif (is_trainer()) {
+                            $profile_url = SITE_URL . '/trainer/profile.php';
+                        }
+                    ?>
+                    <a href="<?php echo $profile_url; ?>" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-user me-1"></i> <?php echo htmlspecialchars(explode(' ', $_SESSION['FullName'])[0]); ?>
+                    </a>
                     <a href="<?php echo SITE_URL; ?>/logout.php" class="btn btn-warning">Sign out</a>
                 <?php else: ?>
                     <a href="<?php echo SITE_URL; ?>/login.php" class="btn btn-outline-light me-2">
