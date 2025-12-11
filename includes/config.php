@@ -186,6 +186,22 @@ function get_unread_notifications_count($userId) {
 }
 
 /**
+ * Gets all notifications for a user.
+ * @param int $userId The ID of the user.
+ * @return array An array of notifications.
+ */
+function get_notifications($userId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE UserID = ? ORDER BY CreatedAt DESC LIMIT 10");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Calculates Body Mass Index (BMI).
  * @param int|null $height Height in cm.
  * @param int|null $weight Weight in kg.

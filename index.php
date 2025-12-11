@@ -62,6 +62,39 @@ include 'includes/header.php';
         <p class="fs-5 text-light mb-4">Your fitness transformation is just a click away.</p>
         <a href="<?php echo SITE_URL; ?>/register.php" class="btn btn-warning btn-lg px-4 rounded-pill">Join Now</a>
     </section>
+
+    <section class="get-in-touch-section py-5">
+        <h2 class="text-center text-warning display-5 fw-bold mb-5">Get in Touch</h2>
+        <div class="row text-center">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-phone fs-1 text-warning mb-3"></i>
+                        <h5 class="card-title">Business Contact</h5>
+                        <p class="card-text">Add later</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-envelope fs-1 text-warning mb-3"></i>
+                        <h5 class="card-title">Email</h5>
+                        <p class="card-text">Add later</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-map-marker-alt fs-1 text-warning mb-3"></i>
+                        <h5 class="card-title">Address</h5>
+                        <p class="card-text">123, Proto Street, Kota Kinabalu, Sabah</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
 
 <?php include 'includes/footer.php'; ?>

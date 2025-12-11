@@ -1,10 +1,11 @@
 <?php
 // This file assumes `config.php` is included before it.
 
-// Get unread notifications count if a user is logged in
 $unreadCount = 0;
+$notifications = [];
 if (is_logged_in()) {
     $unreadCount = get_unread_notifications_count($_SESSION['UserID']);
+    $notifications = get_notifications($_SESSION['UserID']);
 }
 
 // Determine the current page to set the 'active' class on nav links
@@ -31,7 +32,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 </head>
 <body class="public-layout">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-3">
     <div class="container-fluid">
         <a class="navbar-brand" href="<?php echo SITE_URL; ?>/index.php">
             <i class="fas fa-dumbbell"></i> KP FITNESS
@@ -59,26 +60,29 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             </ul>
             <div class="d-flex align-items-center">
                 <?php if (is_logged_in()): ?>
-                    <a href="#" class="btn btn-outline-secondary me-2 position-relative" title="Notifications">
-                        <i class="fas fa-bell"></i>
-                        <?php if ($unreadCount > 0): ?>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                <?php echo $unreadCount; ?>
-                                <span class="visually-hidden">unread messages</span>
-                            </span>
-                        <?php endif; ?>
-                    </a>
-                    
-                    <div class="dropdown">
-                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                            <span class="d-none d-sm-inline mx-1"><?php echo htmlspecialchars(explode(' ', $_SESSION['FullName'])[0]); ?></span>
+                    <div class="dropdown me-3">
+                        <a href="#" class="btn btn-outline-secondary position-relative" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <?php if ($unreadCount > 0): ?>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    <?php echo $unreadCount; ?>
+                                    <span class="visually-hidden">unread messages</span>
+                                </span>
+                            <?php endif; ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                            <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/dashboard.php">Dashboard</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?php echo SITE_URL; ?>/logout.php">Sign out</a></li>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="notificationDropdown">
+                            <?php if (empty($notifications)): ?>
+                                <li><a class="dropdown-item" href="#">No notifications</a></li>
+                            <?php else: ?>
+                                <?php foreach ($notifications as $notification): ?>
+                                    <li><a class="dropdown-item" href="#"><?php echo htmlspecialchars($notification['Title']); ?></a></li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </ul>
                     </div>
+                    
+                    <a href="<?php echo SITE_URL; ?>/client/profile.php" class="btn btn-outline-secondary me-2">My Profile</a>
+                    <a href="<?php echo SITE_URL; ?>/logout.php" class="btn btn-warning">Sign out</a>
                 <?php else: ?>
                     <a href="<?php echo SITE_URL; ?>/login.php" class="btn btn-outline-light me-2">
                         <i class="fas fa-sign-in-alt"></i> Login
