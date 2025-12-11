@@ -44,6 +44,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-clipboard-check me-2"></i> Attendance
             </a>
         </li>
+        <li>
+            <a href="profile.php" class="nav-link text-white <?= $current_page == 'profile.php' ? 'active' : '' ?>">
+                <i class="fas fa-user-edit me-2"></i> My Profile
+            </a>
+        </li>
     </ul>
     <hr>
     <div class="sidebar-footer">

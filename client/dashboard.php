@@ -141,7 +141,7 @@ include 'includes/client_header.php';
                     <li class="list-group-item d-flex justify-content-between"><strong>Weight:</strong> <?php echo htmlspecialchars($user['Weight'] ?? 'N/A'); ?> kg</li>
                     <li class="list-group-item d-flex justify-content-between"><strong>BMI:</strong> <?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</li>
                 </ul>
-                <a href="#" class="btn btn-secondary mt-3">Update Profile</a>
+                <a href="profile.php" class="btn btn-secondary mt-3">Update Profile</a>
             </div>
         </div>
     </div>
