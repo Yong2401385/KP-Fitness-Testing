@@ -11,6 +11,9 @@ if (is_logged_in()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // CSRF Protection
+    validate_csrf_token($_POST['csrf_token']);
+    
     $fullName = sanitize_input($_POST['fullName']);
     $email = sanitize_input($_POST['email']);
     $password = $_POST['password'];
@@ -84,83 +87,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include 'includes/header.php';
 ?>
 
-<style>
-    .auth-form-container {
-        max-width: 500px;
-        margin: 3rem auto;
-        background: var(--light-bg);
-        padding: 2rem;
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-    }
-    .auth-form-container h1 {
-        text-align: center;
-        color: var(--primary-color);
-        margin-bottom: 2rem;
-    }
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 600;
-    }
-    .form-group input {
-        width: 100%;
-        padding: 1rem;
-        background: var(--dark-bg);
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
-        color: var(--text-light);
-        font-size: 1rem;
-        transition: all 0.3s ease;
-    }
-    .form-group input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-    }
-    .form-footer {
-        text-align: center;
-        margin-top: 1.5rem;
-    }
-</style>
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5 col-xl-4">
+        <div class="card mt-5">
+            <div class="card-body p-4">
+                <h1 class="card-title text-center h3 mb-4">Create Your Account</h1>
 
-<div class="auth-form-container">
-    <h1>Create Your Account</h1>
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo $error; ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
 
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-error">
-            <ul>
-                <?php foreach ($errors as $error): ?>
-                    <li><?php echo $error; ?></li>
-                <?php endforeach; ?>
-            </ul>
+                <form action="register.php" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="fullName" name="fullName" value="<?php echo htmlspecialchars($fullName); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">Register</button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="login.php">Login here</a></p>
+                </div>
+            </div>
         </div>
-    <?php endif; ?>
-
-    <form action="register.php" method="POST">
-        <div class="form-group">
-            <label for="fullName">Full Name</label>
-            <input type="text" id="fullName" name="fullName" value="<?php echo htmlspecialchars($fullName); ?>" required>
-        </div>
-        <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div class="form-group">
-            <label for="confirmPassword">Confirm Password</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
-    </form>
-    
-    <div class="form-footer">
-        <p>Already have an account? <a href="login.php" style="color: var(--primary-color);">Login here</a></p>
     </div>
 </div>
 

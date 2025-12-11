@@ -44,156 +44,129 @@ try {
 include 'includes/admin_header.php';
 ?>
 
-<style>
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-}
-
-.stat-icon {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-}
-
-.stat-info .stat-number {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--text-light);
-}
-
-.stat-info .stat-label {
-    color: var(--text-dark);
-    font-size: 0.9rem;
-}
-
-.quick-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.action-card {
-    background: var(--light-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    color: var(--primary-color);
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.action-card:hover {
-    background: var(--primary-color);
-    color: var(--text-light);
-    transform: translateY(-5px);
-}
-
-.action-card i {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    display: block;
-}
-
-.action-card span {
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-</style>
-
-<div class="page-header">
-    <h1>Admin Dashboard</h1>
-    <p>Overview of the KP Fitness system.</p>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Admin Dashboard</h1>
 </div>
 
 <?php if (isset($error_message)): ?>
-    <div class="alert alert-error"><?php echo $error_message; ?></div>
+    <div class="alert alert-danger"><?php echo $error_message; ?></div>
 <?php endif; ?>
 
 <!-- Stats Grid -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-users"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo number_format($totalUsers); ?></div>
-            <div class="stat-label">Total Users</div>
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-users fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo number_format($totalUsers); ?></div>
+                    <div class="small">Total Users</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-user-tie"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo number_format($totalTrainers); ?></div>
-            <div class="stat-label">Trainers</div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-user-tie fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo number_format($totalTrainers); ?></div>
+                    <div class="small">Trainers</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-user-friends"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo number_format($totalClients); ?></div>
-            <div class="stat-label">Clients</div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-secondary">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-user-friends fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo number_format($totalClients); ?></div>
+                    <div class="small">Clients</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-dumbbell"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo number_format($totalClasses); ?></div>
-            <div class="stat-label">Active Classes</div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-dark bg-light">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-dumbbell fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo number_format($totalClasses); ?></div>
+                    <div class="small">Active Classes</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo number_format($totalSessionsThisMonth); ?></div>
-            <div class="stat-label">Sessions This Month</div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-dark">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-calendar-alt fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo number_format($totalSessionsThisMonth); ?></div>
+                    <div class="small">Sessions This Month</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
-        <div class="stat-info">
-            <div class="stat-number"><?php echo format_currency($monthlyRevenue); ?></div>
-            <div class="stat-label">Revenue This Month</div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body d-flex align-items-center">
+                <i class="fas fa-money-bill-wave fs-3 me-3"></i>
+                <div>
+                    <div class="fs-4 fw-bold"><?php echo format_currency($monthlyRevenue); ?></div>
+                    <div class="small">Revenue This Month</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="page-header">
-    <h2>Quick Actions</h2>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h2 class="h2">Quick Actions</h2>
 </div>
-<div class="quick-actions">
-    <a href="users.php" class="action-card">
-        <i class="fas fa-users-cog"></i>
-        <span>Manage Users</span>
-    </a>
-    <a href="classes.php" class="action-card">
-        <i class="fas fa-dumbbell"></i>
-        <span>Manage Classes</span>
-    </a>
-    <a href="sessions.php" class="action-card">
-        <i class="fas fa-calendar-plus"></i>
-        <span>Schedule Sessions</span>
-    </a>
-    <a href="reports.php" class="action-card">
-        <i class="fas fa-chart-line"></i>
-        <span>View Reports</span>
-    </a>
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <a href="users.php" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-users-cog fs-1 text-primary mb-2"></i>
+                    <h5 class="card-title">Manage Users</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="classes.php" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-dumbbell fs-1 text-info mb-2"></i>
+                    <h5 class="card-title">Manage Classes</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="sessions.php" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-calendar-plus fs-1 text-success mb-2"></i>
+                    <h5 class="card-title">Schedule Sessions</h5>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a href="reports.php" class="text-decoration-none">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fs-1 text-danger mb-2"></i>
+                    <h5 class="card-title">View Reports</h5>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>
 
 

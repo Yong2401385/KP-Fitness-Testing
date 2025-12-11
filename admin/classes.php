@@ -10,6 +10,7 @@ $edit_class = null;
 
 // Handle Create or Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_class']))) {
+    validate_csrf_token($_POST['csrf_token']);
     $className = sanitize_input($_POST['className']);
     $description = sanitize_input($_POST['description']);
     $duration = intval($_POST['duration']);
@@ -19,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_class']))) {
 
     // Validation
     if (empty($className) || empty($description) || $duration <= 0 || $maxCapacity <= 0 || empty($difficultyLevel)) {
-        $feedback = ['type' => 'error', 'message' => 'Please fill in all required fields.'];
+        $feedback = ['type' => 'danger', 'message' => 'Please fill in all required fields.'];
     } else {
         try {
             if ($classId) { // Update existing class
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['save_class']))) {
                 }
             }
         } catch (PDOException $e) {
-            $feedback = ['type' => 'error', 'message' => 'Database error: ' . $e->getMessage()];
+            $feedback = ['type' => 'danger', 'message' => 'Database error: ' . $e->getMessage()];
         }
     }
 }
@@ -50,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['edit'])) {
 
 // Handle Deactivate/Reactivate
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['deactivate_class']) || isset($_POST['reactivate_class']))) {
+    validate_csrf_token($_POST['csrf_token']);
     $classId = intval($_POST['classId']);
     $newStatus = isset($_POST['deactivate_class']) ? 0 : 1;
     $action = $newStatus === 0 ? 'deactivated' : 'reactivated';
@@ -60,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['deactivate_class']) 
             $feedback = ['type' => 'success', 'message' => "Class has been $action."];
         }
     } catch (PDOException $e) {
-        $feedback = ['type' => 'error', 'message' => 'Database error: ' . $e->getMessage()];
+        $feedback = ['type' => 'danger', 'message' => 'Database error: ' . $e->getMessage()];
     }
 }
 
@@ -71,155 +73,122 @@ try {
     $stmt->execute();
     $classes = $stmt->fetchAll();
 } catch (PDOException $e) {
-    $feedback = ['type' => 'error', 'message' => 'Could not fetch class data: ' . $e->getMessage()];
+    $feedback = ['type' => 'danger', 'message' => 'Could not fetch class data: ' . $e->getMessage()];
     $classes = [];
 }
 
 include 'includes/admin_header.php';
 ?>
 
-<style>
-.card {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-.card-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-}
-.form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-}
-.form-group { display: flex; flex-direction: column; }
-.form-group.full-width { grid-column: 1 / -1; }
-.form-group label { margin-bottom: 0.5rem; font-weight: 600; }
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--dark-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-light);
-    font-size: 1rem;
-}
-.form-group textarea { min-height: 100px; }
-
-.table-container { overflow-x: auto; }
-.classes-table { width: 100%; border-collapse: collapse; }
-.classes-table th, .classes-table td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-}
-.classes-table th { color: var(--primary-color); }
-.classes-table td .btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
-.btn-danger { background-color: var(--error-color); }
-.btn-success { background-color: var(--success-color); }
-</style>
-
-<div class="page-header">
-    <h1>Class Management</h1>
-    <p>Define the types of classes offered at the fitness center.</p>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Class Management</h1>
 </div>
 
+
 <?php if (!empty($feedback)): ?>
-    <div class="alert alert-<?php echo $feedback['type']; ?>">
+    <div class="alert alert-<?php echo $feedback['type']; ?> alert-dismissible fade show" role="alert">
         <?php echo $feedback['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <!-- Create/Edit Class Form -->
-<div class="card">
-    <h2 class="card-title"><?php echo $edit_class ? 'Edit Class' : 'Create New Class'; ?></h2>
-    <form action="classes.php" method="POST">
-        <?php if ($edit_class): ?>
-            <input type="hidden" name="classId" value="<?php echo $edit_class['ClassID']; ?>">
-        <?php endif; ?>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="className">Class Name</label>
-                <input type="text" id="className" name="className" value="<?php echo htmlspecialchars($edit_class['ClassName'] ?? ''); ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="difficultyLevel">Difficulty Level</label>
-                <select id="difficultyLevel" name="difficultyLevel" required>
-                    <option value="beginner" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
-                    <option value="intermediate" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
-                    <option value="advanced" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="duration">Duration (minutes)</label>
-                <input type="number" id="duration" name="duration" value="<?php echo htmlspecialchars($edit_class['Duration'] ?? ''); ?>" required>
-            </div>
-
-            <div class="form-group">
-                <label for="maxCapacity">Max Capacity</label>
-                <input type="number" id="maxCapacity" name="maxCapacity" value="<?php echo htmlspecialchars($edit_class['MaxCapacity'] ?? ''); ?>" required>
-            </div>
-            
-            <div class="form-group full-width">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" required><?php echo htmlspecialchars($edit_class['Description'] ?? ''); ?></textarea>
-            </div>
-        </div>
-        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-            <button type="submit" name="save_class" class="btn btn-primary"><?php echo $edit_class ? 'Update Class' : 'Create Class'; ?></button>
+<div class="card mb-4">
+    <div class="card-header">
+        <?php echo $edit_class ? 'Edit Class' : 'Create New Class'; ?>
+    </div>
+    <div class="card-body">
+        <form action="classes.php" method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <?php if ($edit_class): ?>
-                <a href="classes.php" class="btn btn-secondary">Cancel Edit</a>
+                <input type="hidden" name="classId" value="<?php echo $edit_class['ClassID']; ?>">
             <?php endif; ?>
-        </div>
-    </form>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="className" class="form-label">Class Name</label>
+                    <input type="text" class="form-control" id="className" name="className" value="<?php echo htmlspecialchars($edit_class['ClassName'] ?? ''); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="difficultyLevel" class="form-label">Difficulty Level</label>
+                    <select class="form-select" id="difficultyLevel" name="difficultyLevel" required>
+                        <option value="beginner" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
+                        <option value="intermediate" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
+                        <option value="advanced" <?php echo ($edit_class['DifficultyLevel'] ?? '') === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="duration" class="form-label">Duration (minutes)</label>
+                    <input type="number" class="form-control" id="duration" name="duration" value="<?php echo htmlspecialchars($edit_class['Duration'] ?? ''); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="maxCapacity" class="form-label">Max Capacity</label>
+                    <input type="number" class="form-control" id="maxCapacity" name="maxCapacity" value="<?php echo htmlspecialchars($edit_class['MaxCapacity'] ?? ''); ?>" required>
+                </div>
+                <div class="col-12">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" required><?php echo htmlspecialchars($edit_class['Description'] ?? ''); ?></textarea>
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" name="save_class" class="btn btn-primary"><?php echo $edit_class ? 'Update Class' : 'Create Class'; ?></button>
+                <?php if ($edit_class): ?>
+                    <a href="classes.php" class="btn btn-secondary">Cancel Edit</a>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- Classes List -->
 <div class="card">
-    <h2 class="card-title">Existing Classes</h2>
-    <div class="table-container">
-        <table class="classes-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Duration</th>
-                    <th>Capacity</th>
-                    <th>Difficulty</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($classes as $class): ?>
+    <div class="card-header">
+        Existing Classes
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
                     <tr>
-                        <td><?php echo htmlspecialchars($class['ClassName']); ?></td>
-                        <td><?php echo $class['Duration']; ?> mins</td>
-                        <td><?php echo $class['MaxCapacity']; ?></td>
-                        <td style="text-transform: capitalize;"><?php echo $class['DifficultyLevel']; ?></td>
-                        <td><?php echo $class['IsActive'] ? 'Active' : 'Inactive'; ?></td>
-                        <td style="display: flex; gap: 0.5rem;">
-                            <a href="classes.php?edit=<?php echo $class['ClassID']; ?>" class="btn btn-secondary">Edit</a>
-                            <form action="classes.php" method="POST" style="display:inline;">
-                                <input type="hidden" name="classId" value="<?php echo $class['ClassID']; ?>">
-                                <?php if ($class['IsActive']): ?>
-                                    <button type="submit" name="deactivate_class" class="btn btn-danger">Deactivate</button>
-                                <?php else: ?>
-                                    <button type="submit" name="reactivate_class" class="btn btn-success">Reactivate</button>
-                                <?php endif; ?>
-                            </form>
-                        </td>
+                        <th>Name</th>
+                        <th>Duration</th>
+                        <th>Capacity</th>
+                        <th>Difficulty</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ($classes as $class): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($class['ClassName']); ?></td>
+                            <td><?php echo $class['Duration']; ?> mins</td>
+                            <td><?php echo $class['MaxCapacity']; ?></td>
+                            <td class="text-capitalize"><?php echo $class['DifficultyLevel']; ?></td>
+                            <td>
+                                <?php if ($class['IsActive']): ?>
+                                    <span class="badge bg-success">Active</span>
+                                <?php else: ?>
+                                    <span class="badge bg-danger">Inactive</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <a href="classes.php?edit=<?php echo $class['ClassID']; ?>" class="btn btn-secondary btn-sm">Edit</a>
+                                <form action="classes.php" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+                                    <input type="hidden" name="classId" value="<?php echo $class['ClassID']; ?>">
+                                    <?php if ($class['IsActive']): ?>
+                                        <button type="submit" name="deactivate_class" class="btn btn-danger btn-sm">Deactivate</button>
+                                    <?php else: ?>
+                                        <button type="submit" name="reactivate_class" class="btn btn-success btn-sm">Reactivate</button>
+                                    <?php endif; ?>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 

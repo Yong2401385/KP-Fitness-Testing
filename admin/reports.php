@@ -36,7 +36,7 @@ try {
     ")->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    $feedback = ['type' => 'error', 'message' => 'Could not fetch report data: ' . $e->getMessage()];
+    $feedback = ['type' => 'danger', 'message' => 'Could not fetch report data: ' . $e->getMessage()];
     $revenue_data = $popular_classes = $membership_dist = [];
 }
 
@@ -54,88 +54,69 @@ $membership_values = json_encode(array_column($membership_dist, 'member_count'))
 include 'includes/admin_header.php';
 ?>
 
-<style>
-.card {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-.card-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-}
-.charts-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
-}
-.list-card ul {
-    list-style: none;
-}
-.list-card li {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.list-card li:last-child {
-    border-bottom: none;
-}
-.list-card .value {
-    font-weight: 700;
-    color: var(--primary-color);
-}
-@media (max-width: 992px) {
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-
-<div class="page-header">
-    <h1>Reports & Analytics</h1>
-    <p>Insights into your business performance.</p>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Reports & Analytics</h1>
 </div>
 
 <?php if (isset($feedback)): ?>
-    <div class="alert alert-<?php echo $feedback['type']; ?>">
+    <div class="alert alert-<?php echo $feedback['type']; ?> alert-dismissible fade show" role="alert">
         <?php echo $feedback['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 
-<div class="charts-grid">
-    <div class="card">
-        <h2 class="card-title">Monthly Revenue (Last 12 Months)</h2>
-        <canvas id="revenueChart"></canvas>
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Monthly Revenue (Last 12 Months)
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
     </div>
-    <div class="card list-card">
-        <h2 class="card-title">Most Popular Classes</h2>
-        <ul>
-            <?php foreach($popular_classes as $class): ?>
-                <li>
-                    <span><?php echo htmlspecialchars($class['ClassName']); ?></span>
-                    <span class="value"><?php echo $class['booking_count']; ?> Bookings</span>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Most Popular Classes
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <?php foreach($popular_classes as $class): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <?php echo htmlspecialchars($class['ClassName']); ?>
+                            <span class="badge bg-primary rounded-pill"><?php echo $class['booking_count']; ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card">
-    <h2 class="card-title">Active Membership Distribution</h2>
-    <div style="max-width: 400px; margin: auto;">
-        <canvas id="membershipChart"></canvas>
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Active Membership Distribution
+            </div>
+            <div class="card-body">
+                <canvas id="membershipChart"></canvas>
+            </div>
+        </div>
     </div>
 </div>
 
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Chart.js global settings
+    Chart.defaults.font.family = 'Inter';
+    Chart.defaults.color = '#888';
+
     // Revenue Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
     new Chart(revenueCtx, {
@@ -145,8 +126,8 @@ document.addEventListener('DOMContentLoaded', function () {
             datasets: [{
                 label: 'Revenue (RM)',
                 data: <?php echo $revenue_values; ?>,
-                borderColor: 'var(--primary-color)',
-                backgroundColor: 'rgba(255, 107, 0, 0.1)',
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4
@@ -155,6 +136,11 @@ document.addEventListener('DOMContentLoaded', function () {
         options: {
             scales: {
                 y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
             }
         }
     });
@@ -167,10 +153,18 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: <?php echo $membership_labels; ?>,
             datasets: [{
                 data: <?php echo $membership_values; ?>,
-                backgroundColor: ['#ff6b00', '#ff8533', '#ffa666', '#ffc499'],
-                borderColor: 'var(--light-bg)',
+                backgroundColor: ['#0d6efd', '#17a2b8', '#ffc107', '#fd7e14'],
+                borderColor: '#fff',
             }]
         },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+            }
+        }
     });
 });
 </script>

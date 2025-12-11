@@ -22,6 +22,7 @@ try {
 
 // --- Handle Form Submission ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_attendance'])) {
+    validate_csrf_token($_POST['csrf_token']);
     $attendance_data = $_POST['attendance'] ?? [];
     
     try {
@@ -55,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_attendance'])) {
         
     } catch (PDOException $e) {
         $pdo->rollBack();
-        $feedback = ['type' => 'error', 'message' => 'A database error occurred: ' . $e->getMessage()];
+        $feedback = ['type' => 'danger', 'message' => 'A database error occurred: ' . $e->getMessage()];
     }
 }
 
@@ -84,7 +85,7 @@ try {
     $bookedClients = $stmt->fetchAll();
 
 } catch (PDOException $e) {
-    $feedback = ['type' => 'error', 'message' => 'Could not fetch class list: ' . $e->getMessage()];
+    $feedback = ['type' => 'danger', 'message' => 'Could not fetch class list: ' . $e->getMessage()];
     $sessionDetails = [];
     $bookedClients = [];
 }
@@ -92,67 +93,65 @@ try {
 include 'includes/trainer_header.php';
 ?>
 
-<style>
-.card { background: var(--light-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
-.card-title { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 1.5rem; }
-.attendance-table { width: 100%; border-collapse: collapse; }
-.attendance-table th, .attendance-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-.attendance-table th { color: var(--primary-color); }
-.attendance-table td:last-child { display: flex; gap: 1rem; }
-.attendance-table select {
-    width: 100%; padding: 0.75rem; background: var(--dark-bg); 
-    border: 2px solid var(--border-color); border-radius: 8px; 
-    color: var(--text-light); font-size: 1rem;
-}
-</style>
-
-<div class="page-header">
-    <h1>Mark Attendance</h1>
-    <?php if($sessionDetails): ?>
-        <p>
-            <strong>Class:</strong> <?php echo htmlspecialchars($sessionDetails['ClassName']); ?> <br>
-            <strong>Date:</strong> <?php echo format_date($sessionDetails['SessionDate']); ?> at <?php echo format_time($sessionDetails['Time']); ?>
-        </p>
-    <?php endif; ?>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2">Mark Attendance</h1>
+        <?php if($sessionDetails): ?>
+            <p class="text-muted">
+                <strong>Class:</strong> <?php echo htmlspecialchars($sessionDetails['ClassName']); ?> | 
+                <strong>Date:</strong> <?php echo format_date($sessionDetails['SessionDate']); ?> at <?php echo format_time($sessionDetails['Time']); ?>
+            </p>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if (!empty($feedback)): ?>
-    <div class="alert alert-<?php echo $feedback['type']; ?>"><?php echo $feedback['message']; ?></div>
+    <div class="alert alert-<?php echo $feedback['type']; ?> alert-dismissible fade show" role="alert">
+        <?php echo $feedback['message']; ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 <?php endif; ?>
 
 <div class="card">
-    <h2 class="card-title">Client List</h2>
-    <form action="attendance.php?session_id=<?php echo $sessionId; ?>" method="POST">
-        <table class="attendance-table">
-            <thead>
-                <tr>
-                    <th>Client Name</th>
-                    <th>Attendance Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($bookedClients)): ?>
-                    <tr><td colspan="2" style="text-align: center;">No clients have booked this session.</td></tr>
-                <?php else: ?>
-                    <?php foreach ($bookedClients as $client): ?>
+    <div class="card-header">
+        Client List
+    </div>
+    <div class="card-body">
+        <form action="attendance.php?session_id=<?php echo $sessionId; ?>" method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
                         <tr>
-                            <td><?php echo htmlspecialchars($client['FullName']); ?></td>
-                            <td>
-                                <select name="attendance[<?php echo $client['ReservationID']; ?>]">
-                                    <option value="present" <?php echo ($client['AttendanceStatus'] ?? '') === 'present' ? 'selected' : ''; ?>>Present</option>
-                                    <option value="absent" <?php echo ($client['AttendanceStatus'] ?? '') === 'absent' ? 'selected' : ''; ?>>Absent</option>
-                                    <option value="late" <?php echo ($client['AttendanceStatus'] ?? '') === 'late' ? 'selected' : ''; ?>>Late</option>
-                                </select>
-                            </td>
+                            <th>Client Name</th>
+                            <th>Attendance Status</th>
                         </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-        <?php if (!empty($bookedClients)): ?>
-            <button type="submit" name="mark_attendance" class="btn btn-primary" style="margin-top: 2rem;">Save Attendance</button>
-        <?php endif; ?>
-    </form>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($bookedClients)): ?>
+                            <tr><td colspan="2" class="text-center">No clients have booked this session.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($bookedClients as $client): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($client['FullName']); ?></td>
+                                    <td>
+                                        <select class="form-select" name="attendance[<?php echo $client['ReservationID']; ?>]">
+                                            <option value="present" <?php echo ($client['AttendanceStatus'] ?? '') === 'present' ? 'selected' : ''; ?>>Present</option>
+                                            <option value="absent" <?php echo ($client['AttendanceStatus'] ?? '') === 'absent' ? 'selected' : ''; ?>>Absent</option>
+                                            <option value="late" <?php echo ($client['AttendanceStatus'] ?? '') === 'late' ? 'selected' : ''; ?>>Late</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php if (!empty($bookedClients)): ?>
+                <button type="submit" name="mark_attendance" class="btn btn-primary mt-3">Save Attendance</button>
+            <?php endif; ?>
+        </form>
+    </div>
 </div>
 
 <?php include 'includes/trainer_footer.php'; ?>

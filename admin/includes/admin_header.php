@@ -1,8 +1,5 @@
 <?php
 // This file assumes `config.php` is included before it, typically from the parent file.
-
-// Get unread notifications count
-$unreadCount = get_unread_notifications_count($_SESSION['UserID']);
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
@@ -12,184 +9,76 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo defined('PAGE_TITLE') ? PAGE_TITLE . ' - ' . SITE_NAME : SITE_NAME . ' Admin'; ?></title>
 
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
     <!-- External Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-    <!-- Core Site and Admin Styles -->
+    
+    <!-- Custom CSS -->
+    <link href="../assets/css/custom.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #ff6b00;
-            --primary-hover: #ff8533;
-            --dark-bg: #1a1a1a;
-            --light-bg: #2d2d2d;
-            --sidebar-bg: rgba(26, 26, 26, 0.95);
-            --text-light: #ffffff;
-            --text-dark: #cccccc;
-            --border-color: rgba(255, 107, 0, 0.2);
-            --success-color: #51cf66;
-            --error-color: #ff6b6b;
-            --info-color: #17a2b8;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--light-bg) 100%);
-            color: var(--text-light);
-            line-height: 1.6;
+            min-height: 100vh;
             display: flex;
         }
-
-        /* --- Sidebar --- */
         .sidebar {
-            width: 280px;
-            background: var(--sidebar-bg);
-            border-right: 1px solid var(--border-color);
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            z-index: 1001;
-        }
-
-        .sidebar-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-        }
-        
-        .sidebar-header .logo {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .sidebar-nav {
-            flex-grow: 1;
-            padding: 1rem 0;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            color: var(--text-dark);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            border-left: 4px solid transparent;
-        }
-
-        .sidebar-nav a:hover {
-            background: rgba(255, 107, 0, 0.05);
-            color: var(--primary-color);
-        }
-        
-        .sidebar-nav a.active {
-            background: rgba(255, 107, 0, 0.1);
-            border-left-color: var(--primary-color);
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-
-        .sidebar-nav a i {
-            width: 25px;
-            margin-right: 1rem;
-            text-align: center;
-        }
-
-        /* --- Main Content --- */
-        .main-content {
-            margin-left: 280px;
-            flex-grow: 1;
-            padding: 2rem;
-            overflow-y: auto;
-        }
-        
-        .page-header {
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .page-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-        .page-header p {
-            color: var(--text-dark);
-            font-size: 1.1rem;
-        }
-
-        /* --- Responsive --- */
-        @media (max-width: 992px) {
-            body {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: static;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .sidebar-header {
-                border-bottom: none;
-            }
-            .sidebar-nav {
-                display: none; /* Simple toggle can be added with JS if needed */
-            }
-            .main-content {
-                margin-left: 0;
-            }
+            width: 260px;
+            flex-shrink: 0;
         }
     </style>
 </head>
 <body>
 
-<nav class="sidebar">
-    <div>
-        <div class="sidebar-header">
-            <a href="<?php echo SITE_URL . '/admin/dashboard.php'; ?>" class="logo">
-                <i class="fas fa-tools"></i> Admin
+<div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark sidebar">
+    <a href="<?php echo SITE_URL . '/admin/dashboard.php'; ?>" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <i class="fas fa-tools fs-4 me-2"></i>
+        <span class="fs-4">Admin</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="dashboard.php" class="nav-link text-white <?= $current_page == 'dashboard.php' ? 'active' : '' ?>">
+                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
             </a>
-        </div>
-        <div class="sidebar-nav">
-            <a href="dashboard.php" class="<?= $current_page == 'dashboard.php' ? 'active' : '' ?>">
-                <i class="fas fa-tachometer-alt"></i> Dashboard
+        </li>
+        <li>
+            <a href="users.php" class="nav-link text-white <?= $current_page == 'users.php' ? 'active' : '' ?>">
+                <i class="fas fa-users-cog me-2"></i> User Management
             </a>
-            <a href="users.php" class="<?= $current_page == 'users.php' ? 'active' : '' ?>">
-                <i class="fas fa-users-cog"></i> User Management
+        </li>
+        <li>
+            <a href="classes.php" class="nav-link text-white <?= $current_page == 'classes.php' ? 'active' : '' ?>">
+                <i class="fas fa-dumbbell me-2"></i> Class Management
             </a>
-            <a href="classes.php" class="<?= $current_page == 'classes.php' ? 'active' : '' ?>">
-                <i class="fas fa-dumbbell"></i> Class Management
+        </li>
+        <li>
+            <a href="sessions.php" class="nav-link text-white <?= $current_page == 'sessions.php' ? 'active' : '' ?>">
+                <i class="fas fa-calendar-plus me-2"></i> Session Scheduling
             </a>
-            <a href="sessions.php" class="<?= $current_page == 'sessions.php' ? 'active' : '' ?>">
-                <i class="fas fa-calendar-plus"></i> Session Scheduling
+        </li>
+        <li>
+            <a href="reports.php" class="nav-link text-white <?= $current_page == 'reports.php' ? 'active' : '' ?>">
+                <i class="fas fa-chart-line me-2"></i> Reports
             </a>
-            <a href="reports.php" class="<?= $current_page == 'reports.php' ? 'active' : '' ?>">
-                <i class="fas fa-chart-line"></i> Reports
-            </a>
-        </div>
-    </div>
-    <div class="sidebar-nav">
-         <a href="../index.php" target="_blank">
-            <i class="fas fa-home"></i> View Main Site
+        </li>
+    </ul>
+    <hr>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+            <strong class="mx-1"><?php echo htmlspecialchars(explode(' ', $_SESSION['FullName'])[0]); ?></strong>
         </a>
-        <a href="../logout.php">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
+        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+            <li><a class="dropdown-item" href="../index.php" target="_blank">View Main Site</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="../logout.php">Sign out</a></li>
+        </ul>
     </div>
-</nav>
+</div>
 
-<main class="main-content">
+<main class="flex-grow-1 p-3">
     <!-- Page content will be injected here -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

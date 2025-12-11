@@ -1,0 +1,20 @@
+/* Custom styles to complement Bootstrap */
+body {
+    background-color: #f8f9fa; /* A light gray background */
+}
+
+/* Admin Layout Styles */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+}
+
+.main-content {
+    flex-grow: 1;
+    overflow-y: auto;
+}

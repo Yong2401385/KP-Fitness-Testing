@@ -45,7 +45,7 @@ try {
     $membership = $stmt->fetch();
 
 } catch (PDOException $e) {
-    $feedback = ['type' => 'error', 'message' => 'Could not fetch dashboard data: ' . $e->getMessage()];
+    $feedback = ['type' => 'danger', 'message' => 'Could not fetch dashboard data: ' . $e->getMessage()];
     $user = [];
     $upcomingBookings = [];
     $workoutPlanCount = 0;
@@ -58,128 +58,92 @@ try {
 include 'includes/client_header.php';
 ?>
 
-<style>
-.welcome-section {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-.welcome-section h1 {
-    font-size: 1.8rem;
-}
-.welcome-section .quick-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-.stat-card {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-}
-.stat-card .stat-number {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--primary-color);
-}
-.stat-card .stat-label {
-    color: var(--text-dark);
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-}
-.content-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-}
-.card {
-    background: var(--light-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 2rem;
-}
-.card-title {
-    font-size: 1.5rem;
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-}
-.card ul {
-    list-style: none;
-}
-.card li {
-    padding: 0.8rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-.card li:last-child {
-    border-bottom: none;
-}
-</style>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard</h1>
+</div>
 
-<div class="welcome-section">
-    <h1>Welcome back, <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>!</h1>
-    <p>Ready to continue your fitness journey? Here's a snapshot of your progress.</p>
-    <div class="quick-actions">
+<div class="card bg-light text-dark p-4 mb-4">
+    <h2>Welcome back, <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>!</h2>
+    <p class="lead">Ready to continue your fitness journey? Here's a snapshot of your progress.</p>
+    <div class="mt-2">
         <a href="booking.php" class="btn btn-primary">Book a Class</a>
         <a href="workout_planner.php" class="btn btn-secondary">AI Workout Planner</a>
     </div>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-number"><?php echo count($upcomingBookings); ?></div>
-        <div class="stat-label">Upcoming Classes</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number"><?php echo $workoutPlanCount; ?></div>
-        <div class="stat-label">Saved Workouts</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number"><?php echo $bmi; ?></div>
-        <div class="stat-label"><?php echo $bmiCategory; ?></div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number" style="font-size: 1.5rem; text-transform: capitalize;">
-            <?php echo $membership ? htmlspecialchars($membership['Type']) : 'None'; ?>
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-primary"><?php echo count($upcomingBookings); ?></div>
+                <div class="text-muted">Upcoming Classes</div>
+            </div>
         </div>
-        <div class="stat-label">Membership</div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-primary"><?php echo $workoutPlanCount; ?></div>
+                <div class="text-muted">Saved Workouts</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="display-4 fw-bold text-primary"><?php echo $bmi; ?></div>
+                <div class="text-muted"><?php echo $bmiCategory; ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <div class="h3 fw-bold text-primary text-capitalize">
+                    <?php echo $membership ? htmlspecialchars($membership['Type']) : 'None'; ?>
+                </div>
+                <div class="text-muted">Membership</div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="content-grid">
-    <div class="card">
-        <h2 class="card-title">Upcoming Classes</h2>
-        <ul>
-            <?php if (empty($upcomingBookings)): ?>
-                <li>No upcoming classes. Why not book one?</li>
-            <?php else: ?>
-                <?php foreach ($upcomingBookings as $booking): ?>
-                    <li>
-                        <strong><?php echo htmlspecialchars($booking['ClassName']); ?></strong><br>
-                        <small><?php echo format_date($booking['SessionDate']); ?> at <?php echo format_time($booking['Time']); ?></small>
-                    </li>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </ul>
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Upcoming Classes
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <?php if (empty($upcomingBookings)): ?>
+                        <li class="list-group-item">No upcoming classes. Why not book one?</li>
+                    <?php else: ?>
+                        <?php foreach ($upcomingBookings as $booking): ?>
+                            <li class="list-group-item">
+                                <strong><?php echo htmlspecialchars($booking['ClassName']); ?></strong><br>
+                                <small><?php echo format_date($booking['SessionDate']); ?> at <?php echo format_time($booking['Time']); ?></small>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
     </div>
-    <div class="card">
-        <h2 class="card-title">Health Stats</h2>
-         <ul>
-            <li><strong>Height:</strong> <?php echo htmlspecialchars($user['Height'] ?? 'N/A'); ?> cm</li>
-            <li><strong>Weight:</strong> <?php echo htmlspecialchars($user['Weight'] ?? 'N/A'); ?> kg</li>
-            <li><strong>BMI:</strong> <?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</li>
-         </ul>
-         <a href="#" class="btn btn-secondary" style="margin-top: 1rem;">Update Profile</a>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                Health Stats
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between"><strong>Height:</strong> <?php echo htmlspecialchars($user['Height'] ?? 'N/A'); ?> cm</li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Weight:</strong> <?php echo htmlspecialchars($user['Weight'] ?? 'N/A'); ?> kg</li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>BMI:</strong> <?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</li>
+                </ul>
+                <a href="#" class="btn btn-secondary mt-3">Update Profile</a>
+            </div>
+        </div>
     </div>
 </div>
 
