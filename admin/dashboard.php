@@ -116,28 +116,40 @@ include 'includes/admin_header.php';
 </div>
 <div class="row">
     <div class="col-md-3 mb-3">
-        <a href="users.php" class="quick-action-card">
-            <i class="fas fa-users-cog fs-1 mb-2"></i>
-            <h5 class="card-title">Manage Users</h5>
-        </a>
+        <div class="card quick-action-card h-100 position-relative">
+            <div class="card-body">
+                <i class="fas fa-users-cog fs-1 mb-2"></i>
+                <h5 class="card-title">Manage Users</h5>
+                <a href="users.php" class="stretched-link"></a>
+            </div>
+        </div>
     </div>
     <div class="col-md-3 mb-3">
-        <a href="classes.php" class="quick-action-card">
-            <i class="fas fa-dumbbell fs-1 mb-2"></i>
-            <h5 class="card-title">Manage Classes</h5>
-        </a>
+        <div class="card quick-action-card h-100 position-relative">
+            <div class="card-body">
+                <i class="fas fa-dumbbell fs-1 mb-2"></i>
+                <h5 class="card-title">Manage Classes</h5>
+                <a href="classes.php" class="stretched-link"></a>
+            </div>
+        </div>
     </div>
     <div class="col-md-3 mb-3">
-        <a href="sessions.php" class="quick-action-card">
-            <i class="fas fa-calendar-plus fs-1 mb-2"></i>
-            <h5 class="card-title">Schedule Sessions</h5>
-        </a>
+        <div class="card quick-action-card h-100 position-relative">
+            <div class="card-body">
+                <i class="fas fa-calendar-plus fs-1 mb-2"></i>
+                <h5 class="card-title">Schedule Sessions</h5>
+                <a href="sessions.php" class="stretched-link"></a>
+            </div>
+        </div>
     </div>
     <div class="col-md-3 mb-3">
-        <a href="reports.php" class="quick-action-card">
-            <i class="fas fa-chart-line fs-1 mb-2"></i>
-            <h5 class="card-title">View Reports</h5>
-        </a>
+        <div class="card quick-action-card h-100 position-relative">
+            <div class="card-body">
+                <i class="fas fa-chart-line fs-1 mb-2"></i>
+                <h5 class="card-title">View Reports</h5>
+                <a href="reports.php" class="stretched-link"></a>
+            </div>
+        </div>
     </div>
 </div>
 
