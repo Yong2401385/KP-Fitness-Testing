@@ -40,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Passwords do not match.';
     }
 
+    if (!isset($_POST['terms'])) {
+        $errors[] = 'You must agree to the Terms and Conditions.';
+    }
+
     // --- Check if email already exists ---
     if (empty($errors)) {
         try {
@@ -73,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['FullName'] = $fullName;
                 $_SESSION['Role'] = 'client';
                 
-                // Redirect to the dashboard
-                redirect('dashboard.php');
+                // Redirect to the profile setup page
+                redirect('client/setup_profile.php');
             } else {
                 $errors[] = 'Failed to create account. Please try again.';
             }
@@ -120,6 +124,10 @@ include 'includes/header.php';
                     <div class="mb-3">
                         <label for="confirmPassword" class="form-label">Confirm Password</label>
                         <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                        <label class="form-check-label" for="terms">I agree to the <a href="#">Terms and Conditions</a></label>
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-warning">Register</button>
