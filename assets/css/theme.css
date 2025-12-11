@@ -1,0 +1,128 @@
+/* Black and Orange Theme for Bootstrap */
+
+:root {
+    --primary-color: #ff6b00;
+    --primary-hover: #ff8533;
+    --dark-bg: #1a1a1a;
+    --light-bg: #2d2d2d;
+    --text-light: #ffffff;
+    --text-dark: #cccccc;
+    --border-color: rgba(255, 107, 0, 0.2);
+}
+
+body {
+    background-color: var(--dark-bg);
+    color: var(--text-light);
+}
+
+.card {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-light);
+}
+
+.card-header {
+    background-color: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table {
+    color: var(--text-light);
+}
+
+.table-striped>tbody>tr:nth-of-type(odd) {
+    color: var(--text-light);
+}
+
+.list-group-item {
+    background-color: var(--light-bg);
+    color: var(--text-light);
+    border-color: var(--border-color);
+}
+
+.bg-light {
+    background-color: var(--light-bg) !important;
+}
+
+/* Navbar */
+.navbar-dark {
+    background-color: var(--dark-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-brand {
+    color: var(--primary-color) !important;
+}
+
+.nav-link {
+    color: var(--text-dark) !important;
+}
+
+.nav-link.active,
+.nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-warning {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-light) !important;
+}
+
+.btn-warning:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+
+/* Sidebar */
+.sidebar {
+    background-color: var(--dark-bg) !important;
+    border-right: 1px solid var(--border-color);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--primary-color) !important;
+}
+
+/* Alerts */
+.alert-success {
+    background-color: rgba(81, 207, 102, 0.1);
+    color: #51cf66;
+    border-color: rgba(81, 207, 102, 0.2);
+}
+
+.alert-danger {
+    background-color: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.2);
+}
+
+/* Forms */
+.form-control, .form-select {
+    background-color: var(--dark-bg);
+    color: var(--text-light);
+    border-color: var(--border-color);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--dark-bg);
+    color: var(--text-light);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 0, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--text-dark);
+}

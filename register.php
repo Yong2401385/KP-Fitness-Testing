@@ -91,7 +91,7 @@ include 'includes/header.php';
     <div class="col-md-6 col-lg-5 col-xl-4">
         <div class="card mt-5">
             <div class="card-body p-4">
-                <h1 class="card-title text-center h3 mb-4">Create Your Account</h1>
+                <h1 class="card-title text-center text-warning h3 mb-4">Create Your Account</h1>
 
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
@@ -127,7 +127,7 @@ include 'includes/header.php';
                 </form>
                 
                 <div class="text-center mt-3">
-                    <p>Already have an account? <a href="login.php">Login here</a></p>
+                    <p>Already have an account? <a href="login.php" class="text-warning">Login here</a></p>
                 </div>
             </div>
         </div>

@@ -18,6 +18,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     
     <!-- Custom CSS -->
     <link href="../assets/css/custom.css" rel="stylesheet">
+    <link href="../assets/css/theme.css" rel="stylesheet">
     <style>
         body {
             min-height: 100vh;

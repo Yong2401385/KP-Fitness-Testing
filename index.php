@@ -12,7 +12,7 @@ include 'includes/header.php';
 </style>
 
 <div class="container my-5">
-    <div class="p-5 text-center bg-body-tertiary rounded-3 hero">
+    <div class="p-5 text-center rounded-3 hero">
         <h1 class="text-warning display-4 fw-bold">Unlock Your Inner Strength</h1>
         <p class="col-lg-8 mx-auto fs-5 text-light">
             Join KP Fitness and transform your fitness journey with our comprehensive class reservation system, expert trainers, and state-of-the-art facilities.
@@ -57,9 +57,9 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <section class="cta-section text-center p-5 bg-light rounded-3">
-        <h2 class="text-dark display-5 fw-bold mb-3">Ready to Get Started?</h2>
-        <p class="fs-5 text-muted mb-4">Your fitness transformation is just a click away.</p>
+    <section class="cta-section text-center p-5 card">
+        <h2 class="text-warning display-5 fw-bold mb-3">Ready to Get Started?</h2>
+        <p class="fs-5 text-light mb-4">Your fitness transformation is just a click away.</p>
         <a href="<?php echo SITE_URL; ?>/register.php" class="btn btn-warning btn-lg px-4 rounded-pill">Join Now</a>
     </section>
 </div>
