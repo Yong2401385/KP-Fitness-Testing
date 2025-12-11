@@ -209,8 +209,8 @@ a:hover {
 
 .sidebar.minimized .nav-link span,
 .sidebar.minimized .sidebar-footer span,
-.sidebar.minimized .fs-4 span {
-    display: none;
+.sidebar.minimized .fs-4 {
+    display: none !important;
 }
 
 .sidebar.minimized .nav-link,
