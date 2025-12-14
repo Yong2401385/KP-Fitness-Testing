@@ -1,2 +1,8 @@
 # Database configuration file
 config.db.php
+
+# VS Code configuration
+.vscode/
+
+# Uploads folder
+uploads/

@@ -169,15 +169,14 @@ include 'includes/client_header.php';
     <h1 class="h2">Dashboard</h1>
 </div>
 
-<div class="card p-4 mb-4" style="background-color: rgba(255, 193, 7, 0.1); border-left: 5px solid var(--accent-color);">
-    <h2 class="text-warning">Welcome back, <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>!</h2>
-    <p class="lead text-light">Ready to continue your fitness journey? Here's a snapshot of your progress.</p>
-    <p class="fst-italic text-light">"<?php echo $quote; ?>"</p>
+<div class="card p-4 mb-4 welcome-card">
+    <h2>Welcome back, <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>!</h2>
+    <p class="lead">Ready to continue your fitness journey? Here's a snapshot of your progress.</p>
+    <p class="fst-italic">"<?php echo $quote; ?>"</p>
     <div class="mt-3">
         <a href="booking.php" class="btn btn-primary btn-lg">Book a Class</a>
-        <a href="workout_planner.php" class="btn btn-secondary btn-lg">AI Workout Planner</a>
-    </div>
-</div>
+        <a href="workout_planner.php" class="btn btn-primary btn-lg">AI Workout Planner</a>
+    </div></div>
 
 <div class="row">
     <div class="col-md-3 mb-3">

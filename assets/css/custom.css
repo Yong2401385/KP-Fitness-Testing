@@ -24,11 +24,14 @@
 }
 
 :root {
-    --primary-color: #0d1b2a; /* Dark Blue */
-    --secondary-color: #f8f9fa; /* Light Gray */
-    --accent-color: #ffc107; /* Yellow */
+    --primary-color: #ff6b00;
+    --primary-hover: #ff8533;
+    --dark-bg: #1a1a1a;
+    --light-bg: #2d2d2d;
     --text-light: #ffffff;
-    --text-dark: #212529; /* A strong dark color for readability */
+    --text-dark: #cccccc;
+    --border-color: rgba(255, 107, 0, 0.2);
+    --accent-color: #ff6b00; /* Using primary color as accent for consistency */
 }
 
 body {
@@ -86,7 +89,7 @@ body {
 .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    color: var(--text-light); /* Ensure button text is light for contrast */
+    color: var(--text-light) !important; /* Ensure button text is light for contrast */
 }
 
 .btn-primary:hover {
@@ -96,7 +99,7 @@ body {
 .btn-secondary {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
-    color: var(--text-dark); /* Ensure button text is dark for contrast */
+    color: var(--text-light) !important; /* Ensure button text is light for contrast */
 }
 
 .table-dark {
@@ -123,4 +126,92 @@ body {
 
 .text-muted {
     color: #6c757d !important; /* Keep default Bootstrap muted color for subtle text */
+}
+
+.welcome-card {
+    background-color: var(--light-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-light) !important; /* Ensure text is light */
+}
+.welcome-card h2 {
+    color: var(--accent-color) !important; /* Accent color for heading */
+}
+.welcome-card .lead, .welcome-card .fst-italic {
+    color: var(--text-light) !important;
+}
+
+/* --- Membership Pricing Cards --- */
+.pricing-card {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.pricing-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.tag {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.tag-popular {
+    background-color: #dc3545; /* Red for popular */
+}
+.tag-savings {
+    background-color: #0d6efd; /* Blue for savings */
+}
+.pricing-card .membership-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 2.5rem; /* Space for the tag */
+    color: var(--text-light);
+}
+.pricing-card .price {
+    font-size: 3.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin: 1rem 0;
+}
+.pricing-card .price-freq {
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+}
+.btn-join {
+    background-color: #008080; /* Teal color from image */
+    color: white;
+    border-radius: 30px;
+    padding: 0.75rem 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    transition: background-color 0.3s;
+}
+.btn-join:hover {
+    background-color: #006666; /* Darker teal */
+    color: white;
+}
+.pricing-card hr {
+    border-color: var(--border-color);
+    margin: 1.5rem 0;
+}
+.pricing-card .benefits {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+}
+.pricing-card .benefits li {
+    margin-bottom: 0.75rem;
+    color: var(--text-light);
 }

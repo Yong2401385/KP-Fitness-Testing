@@ -64,25 +64,32 @@ include 'includes/client_header.php';
         Choose Your Plan
     </div>
     <div class="card-body">
-        <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
-            <?php foreach($membershipPlans as $plan): ?>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            <?php 
+            $plan_tags = ['' => '', 'Unlimited' => 'MOST POPULAR', 'Annual' => 'HUGE SAVINGS'];
+            $tag_classes = ['' => '', 'MOST POPULAR' => 'tag-popular', 'HUGE SAVINGS' => 'tag-savings'];
+            foreach($membershipPlans as $plan): 
+                $tag_text = $plan_tags[$plan['Type']] ?? '';
+                $tag_class = $tag_text ? $tag_classes[$tag_text] : '';
+            ?>
                 <div class="col">
-                    <div class="card mb-4 rounded-3 shadow-sm">
-                        <div class="card-header py-3">
-                            <h4 class="my-0 fw-normal text-capitalize"><?php echo htmlspecialchars($plan['Type']); ?></h4>
-                        </div>
-                        <div class="card-body">
-                            <h1 class="card-title pricing-card-title"><?php echo format_currency($plan['Cost']); ?><small class="text-muted fw-light">/<?php echo $plan['Duration']; ?> days</small></h1>
-                            <ul class="list-unstyled mt-3 mb-4">
-                                <?php 
-                                $benefits = explode(',', $plan['Benefits']);
-                                foreach ($benefits as $benefit) {
-                                    echo '<li><i class="fas fa-check text-success me-2"></i>' . htmlspecialchars(trim($benefit)) . '</li>';
-                                }
-                                ?>
-                            </ul>
-                            <button type="button" class="w-100 btn btn-lg btn-outline-primary choose-plan-btn" data-bs-toggle="modal" data-bs-target="#paymentModal" data-membership-id="<?php echo $plan['MembershipID']; ?>">Choose Plan</button>
-                        </div>
+                    <div class="pricing-card h-100">
+                        <?php if ($tag_text): ?>
+                            <div class="tag <?php echo $tag_class; ?>"><?php echo $tag_text; ?></div>
+                        <?php endif; ?>
+                        <div class="membership-name"><?php echo htmlspecialchars($plan['Type']); ?></div>
+                        <div class="price"><?php echo format_currency($plan['Cost']); ?></div>
+                        <div class="price-freq">/<?php echo $plan['Duration']; ?> days</div>
+                        <button type="button" class="w-100 btn btn-join" data-bs-toggle="modal" data-bs-target="#paymentModal" data-membership-id="<?php echo $plan['MembershipID']; ?>">JOIN TODAY</button>
+                        <hr>
+                        <ul class="benefits list-unstyled">
+                            <?php 
+                            $benefits = explode(',', $plan['Benefits']);
+                            foreach ($benefits as $benefit) {
+                                echo '<li><i class="fas fa-check-circle text-success me-2"></i>' . htmlspecialchars(trim($benefit)) . '</li>';
+                            }
+                            ?>
+                        </ul>
                     </div>
                 </div>
             <?php endforeach; ?>
