@@ -1,10 +1,19 @@
 /* Custom styles to complement Bootstrap */
-body {
-    background-color: #f8f9fa; /* A light gray background */
+
+:root {
+    --primary-color: #0d1b2a; /* Dark Blue */
+    --secondary-color: #f8f9fa; /* Light Gray */
+    --accent-color: #ffc107; /* Yellow */
+    --text-light: #ffffff;
+    --text-dark: #212529; /* A strong dark color for readability */
 }
 
-/* Admin Layout Styles */
-.admin-layout {
+body {
+    background-color: var(--secondary-color);
+    color: var(--text-dark); /* Default body text color */
+}
+
+.dashboard-layout {
     display: flex;
     min-height: 100vh;
 }
@@ -12,9 +21,83 @@ body {
 .sidebar {
     width: 280px;
     flex-shrink: 0;
+    background-color: var(--primary-color);
+    color: var(--text-light);
+}
+
+.sidebar .nav-link {
+    color: var(--text-light);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--accent-color);
+    color: var(--text-dark);
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .main-content {
     flex-grow: 1;
     overflow-y: auto;
+    padding: 2rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-bottom: 1px solid var(--accent-color);
+}
+
+.card-body {
+    color: var(--text-dark); /* Ensure card body text is dark */
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-light); /* Ensure button text is light for contrast */
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}
+
+.btn-secondary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--text-dark); /* Ensure button text is dark for contrast */
+}
+
+.table-dark {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+}
+
+.progress-bar {
+    background-color: var(--accent-color);
+}
+
+.text-primary {
+    color: var(--primary-color) !important; /* Explicitly use the defined primary color */
+}
+
+.text-warning {
+    color: var(--accent-color) !important; /* Explicitly use the defined accent color */
+}
+
+.bg-light {
+    background-color: #e9ecef !important;
+    color: var(--text-dark) !important; /* Ensure text on light backgrounds is dark */
+}
+
+.text-muted {
+    color: #6c757d !important; /* Keep default Bootstrap muted color for subtle text */
 }

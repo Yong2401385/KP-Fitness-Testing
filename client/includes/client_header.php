@@ -19,6 +19,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <!-- Custom CSS -->
     <link href="../assets/css/custom.css" rel="stylesheet">
     <link href="../assets/css/theme.css" rel="stylesheet">
+    
+    <!-- Vanilla Calendar CSS -->
+    <link href="../assets/js/vanilla-js-calendar/vanilla-calendar.min.css" rel="stylesheet">
 </head>
 <body class="dashboard-layout">
 
