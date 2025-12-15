@@ -258,7 +258,34 @@ include 'includes/client_header.php';
                     <li class="list-group-item d-flex justify-content-between"><strong>BMI:</strong> <?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</li>
                 </ul>
                 <canvas id="bmiChart" class="mt-3"></canvas>
-                <a href="profile.php" class="btn btn-secondary mt-3">Update Profile</a>
+                <button id="update-stats-btn" class="btn btn-secondary mt-3">Update Stats</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Stats Modal -->
+<div class="modal fade" id="updateStatsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Health Stats</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateStatsForm">
+                    <div class="mb-3">
+                        <label for="stats-height" class="form-label">Height (cm)</label>
+                        <input type="number" class="form-control" id="stats-height" name="height" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="stats-weight" class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-control" id="stats-weight" name="weight" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -286,6 +313,77 @@ include 'includes/client_header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Update Stats Logic
+    const updateStatsModal = new bootstrap.Modal(document.getElementById('updateStatsModal'));
+    const updateStatsBtn = document.getElementById('update-stats-btn');
+    const updateStatsForm = document.getElementById('updateStatsForm');
+
+    updateStatsBtn.addEventListener('click', () => {
+        // Pre-fill values from the display
+        // Note: This assumes the text content is just the number or number + unit. 
+        // Based on the HTML: <strong>Height:</strong> 175 cm
+        // We need to parse the text nodes.
+        
+        // A cleaner way is to use PHP to output the values into JS variables or data attributes, 
+        // but since we are in JS, let's parse or use the values passed to the chart if available.
+        // Actually, the PHP variables $user['Height'] and $user['Weight'] are printed in the HTML.
+        // Let's grab them from the list items.
+        
+        const listItems = document.querySelectorAll('.card-body ul.list-group li.list-group-item');
+        // Assuming order: Height, Weight, BMI
+        const heightText = listItems[0].childNodes[1].textContent.trim().split(' ')[0]; // "175 cm" -> "175"
+        const weightText = listItems[1].childNodes[1].textContent.trim().split(' ')[0]; // "70 kg" -> "70"
+
+        document.getElementById('stats-height').value = heightText !== 'N/A' ? heightText : '';
+        document.getElementById('stats-weight').value = weightText !== 'N/A' ? weightText : '';
+        
+        updateStatsModal.show();
+    });
+
+    updateStatsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        formData.append('csrf_token', '<?php echo get_csrf_token(); ?>');
+
+        fetch('../api/update_stats.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update UI
+                const listItems = document.querySelectorAll('.card-body ul.list-group li.list-group-item');
+                const newHeight = formData.get('height');
+                const newWeight = formData.get('weight');
+                
+                listItems[0].innerHTML = `<strong>Height:</strong> ${newHeight} cm`;
+                listItems[1].innerHTML = `<strong>Weight:</strong> ${newWeight} kg`;
+                listItems[2].innerHTML = `<strong>BMI:</strong> ${data.bmi} (${data.bmiCategory})`;
+                
+                // Update the BMI card at the top too if it exists
+                // The BMI card is the 3rd card in the row of 4
+                const topCards = document.querySelectorAll('.row .col-md-3 .card-body .display-4');
+                if (topCards.length >= 3) {
+                    topCards[2].textContent = data.bmi;
+                    topCards[2].nextElementSibling.textContent = data.bmiCategory;
+                }
+
+                updateStatsModal.hide();
+                alert('Stats updated successfully!');
+                
+                // Optional: Reload page to refresh chart, or just leave it for now
+                // location.reload(); 
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    });
+
     // BMI Chart
     fetch('../api/get_weight_history.php')
         .then(response => response.json())
