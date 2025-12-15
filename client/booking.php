@@ -360,20 +360,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         const safeActivity = session.ActivityName.replace(/"/g, '&quot;');
                         const safeDesc = (session.Description || 'No description').replace(/"/g, '&quot;');
                         
+                        // Format time to HH:MM
+                        const timeStr = session.Time.substring(0, 5);
+                        
                         item.innerHTML = `
-                            <div class="row align-items-center">
+                            <div class="row align-items-center text-center text-md-start">
+                                <div class="col-md-2">
+                                    <h4 class="mb-0 fw-bold text-dark">${timeStr}</h4>
+                                </div>
                                 <div class="col-md-3">
-                                    <h5 class="mb-0 text-dark">${session.Time}</h5>
+                                    <h4 class="mb-0 text-primary text-wrap">${session.ActivityName}</h4>
                                 </div>
-                                <div class="col-md-5">
-                                    <h5 class="mb-1 text-primary">${session.ActivityName}</h5>
-                                    <div class="text-muted"><i class="fas fa-user-tie me-1"></i>${session.TrainerName}</div>
-                                    <div class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>${session.Room || 'N/A'}</div>
+                                <div class="col-md-2">
+                                    <h5 class="mb-0 text-secondary"><i class="fas fa-map-marker-alt me-2"></i>${session.Room || 'N/A'}</h5>
                                 </div>
-                                <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                                    <button class="btn btn-outline-info btn-sm view-details-btn" 
+                                <div class="col-md-3">
+                                    <h5 class="mb-0 text-secondary"><i class="fas fa-user-tie me-2"></i>${session.TrainerName}</h5>
+                                </div>
+                                <div class="col-md-2 text-md-end mt-2 mt-md-0">
+                                    <button class="btn btn-outline-info w-100 view-details-btn" 
                                         data-activity="${safeActivity}"
-                                        data-time="${session.SessionDate} at ${session.Time}"
+                                        data-time="${session.SessionDate} at ${timeStr}"
                                         data-trainer="${session.TrainerName}"
                                         data-room="${session.Room || 'N/A'}"
                                         data-category="${session.CategoryName} (${session.DifficultyLevel})"
