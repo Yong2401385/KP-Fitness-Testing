@@ -276,11 +276,11 @@ include 'includes/client_header.php';
                 <form id="updateStatsForm">
                     <div class="mb-3">
                         <label for="stats-height" class="form-label">Height (cm)</label>
-                        <input type="number" class="form-control" id="stats-height" name="height" required>
+                        <input type="number" class="form-control bg-light text-secondary" id="stats-height" name="height" required>
                     </div>
                     <div class="mb-3">
                         <label for="stats-weight" class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-control" id="stats-weight" name="weight" required>
+                        <input type="number" class="form-control bg-light text-secondary" id="stats-weight" name="weight" required>
                     </div>
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -319,23 +319,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStatsForm = document.getElementById('updateStatsForm');
 
     updateStatsBtn.addEventListener('click', () => {
-        // Pre-fill values from the display
-        // Note: This assumes the text content is just the number or number + unit. 
-        // Based on the HTML: <strong>Height:</strong> 175 cm
-        // We need to parse the text nodes.
-        
-        // A cleaner way is to use PHP to output the values into JS variables or data attributes, 
-        // but since we are in JS, let's parse or use the values passed to the chart if available.
-        // Actually, the PHP variables $user['Height'] and $user['Weight'] are printed in the HTML.
-        // Let's grab them from the list items.
-        
+        // Pre-fill values from the display logic
+        // We look for the text immediately following the strong tag in the list items
         const listItems = document.querySelectorAll('.card-body ul.list-group li.list-group-item');
-        // Assuming order: Height, Weight, BMI
-        const heightText = listItems[0].childNodes[1].textContent.trim().split(' ')[0]; // "175 cm" -> "175"
-        const weightText = listItems[1].childNodes[1].textContent.trim().split(' ')[0]; // "70 kg" -> "70"
+        
+        let currentHeight = '';
+        let currentWeight = '';
 
-        document.getElementById('stats-height').value = heightText !== 'N/A' ? heightText : '';
-        document.getElementById('stats-weight').value = weightText !== 'N/A' ? weightText : '';
+        if (listItems.length >= 2) {
+            // Helper to clean text: " 175 cm" -> "175"
+            const extractValue = (node) => {
+                if (!node) return '';
+                // Get the text content, remove "Height:" or "Weight:" labels just in case, then trim
+                let text = node.textContent.replace(/(Height:|Weight:)/g, '').trim();
+                // Extract the first number found
+                const match = text.match(/(\d+(\.\d+)?)/);
+                return match ? match[0] : '';
+            };
+
+            currentHeight = extractValue(listItems[0]);
+            currentWeight = extractValue(listItems[1]);
+        }
+
+        document.getElementById('stats-height').value = currentHeight;
+        document.getElementById('stats-weight').value = currentWeight;
         
         updateStatsModal.show();
     });
