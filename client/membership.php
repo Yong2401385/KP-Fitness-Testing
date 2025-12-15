@@ -8,23 +8,28 @@ $userId = $_SESSION['UserID'];
 // --- Fetch Data for Display ---
 // Get current membership
 $stmt = $pdo->prepare("
-    SELECT m.Type, m.Benefits, p.PaymentDate
+    SELECT m.PlanName, m.Benefits, u.MembershipStartDate, u.MembershipEndDate
     FROM users u
     JOIN membership m ON u.MembershipID = m.MembershipID
-    LEFT JOIN payments p ON p.UserID = u.UserID AND p.MembershipID = m.MembershipID
-    WHERE u.UserID = ? AND p.Status = 'completed'
-    ORDER BY p.PaymentDate DESC LIMIT 1
+    WHERE u.UserID = ?
 ");
 $stmt->execute([$userId]);
 $currentMembership = $stmt->fetch();
 
+if ($currentMembership) {
+    $endDate = new DateTime($currentMembership['MembershipEndDate']);
+    $today = new DateTime();
+    $daysLeft = $today > $endDate ? 0 : $today->diff($endDate)->days;
+}
+
+
 // Get all membership plans
-$stmt = $pdo->prepare("SELECT * FROM membership WHERE IsActive = TRUE ORDER BY Cost");
+$stmt = $pdo->prepare("SELECT * FROM membership WHERE IsActive = TRUE AND Type != 'onetime' ORDER BY Cost");
 $stmt->execute();
 $membershipPlans = $stmt->fetchAll();
 
 // Get payment history
-$stmt = $pdo->prepare("SELECT p.PaymentDate, p.Amount, p.Status, m.Type FROM payments p JOIN membership m ON p.MembershipID = m.MembershipID WHERE p.UserID = ? ORDER BY p.PaymentDate DESC");
+$stmt = $pdo->prepare("SELECT p.PaymentDate, p.Amount, p.Status, m.PlanName FROM payments p JOIN membership m ON p.MembershipID = m.MembershipID WHERE p.UserID = ? ORDER BY p.PaymentDate DESC");
 $stmt->execute([$userId]);
 $paymentHistory = $stmt->fetchAll();
 
@@ -44,79 +49,58 @@ include 'includes/client_header.php';
 
 <!-- Current Plan -->
 <div class="card mb-4">
-    <div class="card-header">
-        Your Current Plan
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Current Membership Plan</h5>
+        <?php if ($currentMembership && $currentMembership['PlanName'] !== 'Annual Class Membership'): ?>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#membershipPlansModal">Upgrade</button>
+        <?php endif; ?>
     </div>
     <div class="card-body" id="current-plan-container">
         <?php if ($currentMembership): ?>
-            <h3 class="card-title text-capitalize"><?php echo htmlspecialchars($currentMembership['Type']); ?> Plan</h3>
+            <h3 class="card-title text-capitalize">
+                <?php echo htmlspecialchars(str_replace(' Class Membership', '', $currentMembership['PlanName'])); ?>
+            </h3>
             <p><strong>Benefits:</strong> <?php echo htmlspecialchars($currentMembership['Benefits']); ?></p>
-            <p class="text-muted">Active Since: <?php echo format_date($currentMembership['PaymentDate']); ?></p>
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Active Date:</strong> <?php echo htmlspecialchars(format_date($currentMembership['MembershipStartDate'])); ?>
+                </div>
+                <div class="col-md-4">
+                    <strong>Expire Date:</strong> <?php echo htmlspecialchars(format_date($currentMembership['MembershipEndDate'])); ?>
+                </div>
+                <div class="col-md-4">
+                    <strong>Days Left:</strong> <span class="badge bg-success"><?php echo $daysLeft; ?></span>
+                </div>
+            </div>
         <?php else: ?>
-            <p>You do not have an active membership plan. Choose one below to get started!</p>
+            <div class="text-center p-4">
+                <p class="lead">You do not have an active membership plan.</p>
+                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#membershipPlansModal">Subscribe Membership</button>
+            </div>
         <?php endif; ?>
     </div>
 </div>
 
-<!-- Available Plans -->
-<div class="card mb-4">
-    <div class="card-header">
-        Choose Your Plan
-    </div>
-    <div class="card-body">
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            <?php 
-            $plan_tags = ['' => '', 'Unlimited' => 'MOST POPULAR', 'Annual' => 'HUGE SAVINGS'];
-            $tag_classes = ['' => '', 'MOST POPULAR' => 'tag-popular', 'HUGE SAVINGS' => 'tag-savings'];
-            foreach($membershipPlans as $plan): 
-                $tag_text = $plan_tags[$plan['Type']] ?? '';
-                $tag_class = $tag_text ? $tag_classes[$tag_text] : '';
-            ?>
-                <div class="col">
-                    <div class="pricing-card h-100">
-                        <?php if ($tag_text): ?>
-                            <div class="tag <?php echo $tag_class; ?>"><?php echo $tag_text; ?></div>
-                        <?php endif; ?>
-                        <div class="membership-name"><?php echo htmlspecialchars($plan['Type']); ?></div>
-                        <div class="price"><?php echo format_currency($plan['Cost']); ?></div>
-                        <div class="price-freq">/<?php echo $plan['Duration']; ?> days</div>
-                        <button type="button" class="w-100 btn btn-join" data-bs-toggle="modal" data-bs-target="#paymentModal" data-membership-id="<?php echo $plan['MembershipID']; ?>">JOIN TODAY</button>
-                        <hr>
-                        <ul class="benefits list-unstyled">
-                            <?php 
-                            $benefits = explode(',', $plan['Benefits']);
-                            foreach ($benefits as $benefit) {
-                                echo '<li><i class="fas fa-check-circle text-success me-2"></i>' . htmlspecialchars(trim($benefit)) . '</li>';
-                            }
-                            ?>
-                        </ul>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</div>
-
-<!-- Payment History -->
+<!-- Membership History -->
 <div class="card">
     <div class="card-header">
-        Payment History
+        <h5 class="mb-0">Membership History</h5>
     </div>
     <div class="card-body" id="payment-history-container">
         <div class="table-responsive">
             <table class="table table-striped table-hover">
-                <thead class="table-dark">
+                <thead class="table-light">
                     <tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     <?php if(empty($paymentHistory)): ?>
-                        <tr><td colspan="4" class="text-center">No payment history found.</td></tr>
+                        <tr><td colspan="4" class="text-center text-muted">No membership history found.</td></tr>
                     <?php else: ?>
                         <?php foreach($paymentHistory as $payment): ?>
                             <tr>
-                                <td><?php echo format_date($payment['PaymentDate']); ?></td>
-                                <td class="text-capitalize"><?php echo htmlspecialchars($payment['Type']); ?></td>
-                                <td><?php echo format_currency($payment['Amount']); ?></td>
+                                <td><?php echo htmlspecialchars(format_date($payment['PaymentDate'])); ?></td>
+                                <td class="text-capitalize"><?php echo htmlspecialchars(str_replace(' Class Membership', '', $payment['PlanName'])); ?></td>
+                                <td><?php echo htmlspecialchars(format_currency($payment['Amount'])); ?></td>
                                 <td><span class="badge bg-success text-capitalize"><?php echo htmlspecialchars($payment['Status']); ?></span></td>
                             </tr>
                         <?php endforeach; ?>
@@ -126,6 +110,42 @@ include 'includes/client_header.php';
         </div>
     </div>
 </div>
+
+<!-- Membership Plans Modal -->
+<div class="modal fade" id="membershipPlansModal" tabindex="-1" aria-labelledby="membershipPlansModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="membershipPlansModalLabel">Choose Your Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    <?php foreach($membershipPlans as $plan): ?>
+                        <div class="col">
+                            <div class="pricing-card h-100">
+                                <div class="membership-name"><?php echo htmlspecialchars(str_replace(' Class Membership', '', $plan['PlanName'])); ?></div>
+                                <div class="price"><?php echo htmlspecialchars(format_currency($plan['Cost'])); ?></div>
+                                <div class="price-freq">/<?php echo $plan['Duration'] >= 365 ? 'year' : 'month'; ?></div>
+                                <button type="button" class="w-100 btn btn-join choose-plan-btn" data-membership-id="<?php echo $plan['MembershipID']; ?>">Choose Plan</button>
+                                <hr>
+                                <ul class="benefits list-unstyled">
+                                    <?php 
+                                    $benefits = explode(',', $plan['Benefits']);
+                                    foreach ($benefits as $benefit) {
+                                        echo '<li><i class="fas fa-check-circle text-success me-2"></i>' . htmlspecialchars(trim($benefit)) . '</li>';
+                                    }
+                                    ?>
+                                </ul>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- Payment Modal -->
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
@@ -167,17 +187,21 @@ include 'includes/client_header.php';
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     let selectedMembershipId = null;
+    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    const membershipPlansModal = new bootstrap.Modal(document.getElementById('membershipPlansModal'));
 
     document.querySelectorAll('.choose-plan-btn').forEach(button => {
         button.addEventListener('click', (e) => {
-            selectedMembershipId = e.target.dataset.membershipId;
+            selectedMembershipId = e.currentTarget.dataset.membershipId;
+            membershipPlansModal.hide();
+            paymentModal.show();
         });
     });
 
     document.querySelectorAll('.payment-method-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             document.querySelectorAll('.payment-method-btn').forEach(btn => btn.classList.remove('active'));
-            e.target.classList.add('active');
+            e.currentTarget.classList.add('active');
             document.getElementById('pay-now-btn').disabled = false;
         });
     });
@@ -201,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('payment-success').classList.remove('d-none');
                 if (data.success) {
                     setTimeout(() => {
-                        window.location.href = 'dashboard.php?payment=success';
+                        window.location.reload();
                     }, 2000);
                 } else {
                     // In a real app, you would show an error message in the modal
