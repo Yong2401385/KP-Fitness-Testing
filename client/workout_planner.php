@@ -15,7 +15,14 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId]);
 $membership = $stmt->fetch();
 
-$isPremiumMember = $membership && in_array($membership['PlanName'], ['yearly', 'monthly']);
+$userTier = 'basic'; // Default for non-members or if no membership
+if ($membership) {
+    if (in_array($membership['PlanName'], ['Annual Class Membership', 'Unlimited Class Membership'])) {
+        $userTier = 'premium';
+    } elseif ($membership['PlanName'] === '8 Class Membership') {
+        $userTier = 'mid_tier';
+    }
+}
 
 // Fetch existing plans for display
 $stmt = $pdo->prepare("SELECT PlanID, PlanName, Goal, FitnessLevel, CreatedAt FROM workout_plans WHERE UserID = ? ORDER BY CreatedAt DESC");
@@ -184,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_plan'])) {
     $fitnessLevel = sanitize_input($_POST['fitnessLevel']);
     $workoutDays = $_POST['workoutDays'] ?? [];
 
-    if (!$isPremiumMember) {
+    if ($userTier !== 'premium') { // Enforce basic options for non-premium
         $goal = 'general_fitness';
         $fitnessLevel = 'beginner';
     }
@@ -205,8 +212,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_plan'])) {
 
 // Handle Save Plan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_plan'])) {
-    if (!$isPremiumMember && $savedPlansCount > 0) {
-        $feedback = ['type' => 'danger', 'message' => 'Your plan allows for one saved plan. Upgrade to save more.'];
+    if ($userTier !== 'premium' && $savedPlansCount > 0) { // Enforce 1 plan limit for non-premium
+        $feedback = ['type' => 'danger', 'message' => 'Your current plan allows for only one saved plan. Upgrade to save more, or delete your existing plan to save a new one.'];
     } elseif (isset($_SESSION['generated_plan'])) {
         $planToSave = $_SESSION['generated_plan'];
         $planDetails = json_encode($planToSave);
@@ -304,28 +311,28 @@ include 'includes/client_header.php';
                     </div>
                     <div class="mb-3 position-relative">
                         <label for="goal" class="form-label">Primary Goal</label>
-                        <select class="form-select" name="goal" id="goal" required <?php echo !$isPremiumMember ? 'disabled' : ''; ?>>
+                        <select class="form-select" name="goal" id="goal" required <?php echo $userTier !== 'premium' ? 'disabled' : ''; ?>>
                             <option value="">-- Select a Goal --</option>
-                            <option value="bulking" <?php echo $goal === 'bulking' ? 'selected' : ''; ?>>Muscle Gain (Bulking)</option>
-                            <option value="cutting" <?php echo $goal === 'cutting' ? 'selected' : ''; ?>>Fat Loss (Cutting)</option>
-                            <option value="general_fitness" <?php echo ($goal === 'general_fitness' || !$isPremiumMember) ? 'selected' : ''; ?>>General Fitness</option>
-                            <option value="strength" <?php echo $goal === 'strength' ? 'selected' : ''; ?>>Strength</option>
-                            <option value="endurance" <?php echo $goal === 'endurance' ? 'selected' : ''; ?>>Endurance</option>
+                            <option value="bulking" <?php echo $goal === 'bulking' && $userTier === 'premium' ? 'selected' : ''; ?>>Muscle Gain (Bulking)</option>
+                            <option value="cutting" <?php echo $goal === 'cutting' && $userTier === 'premium' ? 'selected' : ''; ?>>Fat Loss (Cutting)</option>
+                            <option value="general_fitness" <?php echo ($goal === 'general_fitness' || $userTier !== 'premium') ? 'selected' : ''; ?>>General Fitness</option>
+                            <option value="strength" <?php echo $goal === 'strength' && $userTier === 'premium' ? 'selected' : ''; ?>>Strength</option>
+                            <option value="endurance" <?php echo $goal === 'endurance' && $userTier === 'premium' ? 'selected' : ''; ?>>Endurance</option>
                         </select>
-                        <?php if (!$isPremiumMember): ?>
-                            <div class="lock-overlay" title="Upgrade to an Unlimited or higher tier member to unlock more goals."></div>
+                        <?php if ($userTier !== 'premium'): ?>
+                            <div class="lock-overlay" title="Upgrade to an Unlimited or higher tier membership to unlock more goals."></div>
                         <?php endif; ?>
                     </div>
                     <div class="mb-3 position-relative">
                         <label for="fitnessLevel" class="form-label">Fitness Level</label>
-                        <select class="form-select" name="fitnessLevel" id="fitnessLevel" required <?php echo !$isPremiumMember ? 'disabled' : ''; ?>>
+                        <select class="form-select" name="fitnessLevel" id="fitnessLevel" required <?php echo $userTier !== 'premium' ? 'disabled' : ''; ?>>
                             <option value="">-- Select Your Level --</option>
-                            <option value="beginner" <?php echo ($fitnessLevel === 'beginner' || !$isPremiumMember) ? 'selected' : ''; ?>>Beginner</option>
-                            <option value="intermediate" <?php echo $fitnessLevel === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
-                            <option value="advanced" <?php echo $fitnessLevel === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
+                            <option value="beginner" <?php echo ($fitnessLevel === 'beginner' || $userTier !== 'premium') ? 'selected' : ''; ?>>Beginner</option>
+                            <option value="intermediate" <?php echo $fitnessLevel === 'intermediate' && $userTier === 'premium' ? 'selected' : ''; ?>>Intermediate</option>
+                            <option value="advanced" <?php echo $fitnessLevel === 'advanced' && $userTier === 'premium' ? 'selected' : ''; ?>>Advanced</option>
                         </select>
-                        <?php if (!$isPremiumMember): ?>
-                            <div class="lock-overlay" title="Upgrade to an Unlimited or higher tier member to unlock more levels."></div>
+                        <?php if ($userTier !== 'premium'): ?>
+                            <div class="lock-overlay" title="Upgrade to an Unlimited or higher tier membership to unlock more levels."></div>
                         <?php endif; ?>
                     </div>
                     <div class="mb-3">
@@ -358,8 +365,8 @@ include 'includes/client_header.php';
                 <?php if (isset($_SESSION['generated_plan'])): ?>
                 <form action="workout_planner.php" method="POST" class="d-inline">
                      <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
-                     <button type="submit" name="save_plan" class="btn btn-success btn-sm" <?php echo !$isPremiumMember && $savedPlansCount > 0 ? 'disabled' : ''; ?>>
-                        <?php echo !$isPremiumMember && $savedPlansCount > 0 ? 'Upgrade to Save More' : 'Save Plan'; ?>
+                     <button type="submit" name="save_plan" class="btn btn-success btn-sm" <?php echo $userTier !== 'premium' && $savedPlansCount > 0 ? 'disabled' : ''; ?>>
+                        <?php echo $userTier !== 'premium' && $savedPlansCount > 0 ? 'Upgrade to Save More' : 'Save Plan'; ?>
                      </button>
                 </form>
                 <?php endif; ?>
