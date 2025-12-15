@@ -16,10 +16,10 @@ try {
     
     // Get upcoming bookings (next 5)
     $stmt = $pdo->prepare(query: "
-        SELECT s.SessionDate, s.Time, c.ClassName 
+        SELECT s.SessionDate, s.Time, a.ClassName 
         FROM reservations r
         JOIN sessions s ON r.SessionID = s.SessionID
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE()
         ORDER BY s.SessionDate, s.Time
         LIMIT 5
@@ -34,7 +34,7 @@ try {
 
     // Get current membership
     $stmt = $pdo->prepare("
-        SELECT m.Type, p.Status as PaymentStatus
+        SELECT m.PlanName, p.Status as PaymentStatus
         FROM users u 
         LEFT JOIN membership m ON u.MembershipID = m.MembershipID
         LEFT JOIN payments p ON p.UserID = u.UserID AND p.MembershipID = m.MembershipID
@@ -172,7 +172,7 @@ include 'includes/client_header.php';
 <div class="card p-4 mb-4">
     <h2>Welcome back, <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>!</h2>
     <p class="lead">Ready to continue your fitness journey? Here's a snapshot of your progress.</p>
-    <p class="fst-italic">"<?php echo $quote; ?>"</p>
+    <p class="fst-italic">"<?php echo htmlspecialchars($quote); ?>"</p>
     <div class="mt-3">
         <a href="booking.php" class="btn btn-primary btn-lg">Book a Class</a>
         <a href="workout_planner.php" class="btn btn-primary btn-lg">AI Workout Planner</a>
@@ -182,35 +182,43 @@ include 'includes/client_header.php';
 <div class="row">
     <div class="col-md-3 mb-3">
         <div class="card text-center h-100">
-            <div class="card-body">
-                <div class="display-4 fw-bold text-primary"><?php echo count($upcomingBookings); ?></div>
-                <h6>Upcoming Classes</h6>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div class="display-4 fw-bold text-primary mb-2"><?php echo count($upcomingBookings); ?></div>
+                <h6 class="mt-auto">Upcoming Classes</h6>
             </div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="card text-center h-100">
-            <div class="card-body">
-                <div class="display-4 fw-bold text-primary"><?php echo $workoutPlanCount; ?></div>
-                <h6>Saved Workouts</h6>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div class="display-4 fw-bold text-primary mb-2"><?php echo $workoutPlanCount; ?></div>
+                <h6 class="mt-auto">Saved Workouts</h6>
             </div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="card text-center h-100">
-            <div class="card-body">
-                <div class="display-4 fw-bold text-primary"><?php echo $bmi; ?></div>
-                <h6><?php echo $bmiCategory; ?></h6>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div class="display-4 fw-bold text-primary mb-2"><?php echo $bmi; ?></div>
+                <h6 class="mt-auto"><?php echo $bmiCategory; ?></h6>
             </div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="card text-center h-100">
-            <div class="card-body">
-                <div class="display-4 fw-bold text-primary text-capitalize">
-                    <?php echo $membership ? htmlspecialchars($membership['Type']) : 'None'; ?>
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div class="display-4 fw-bold text-primary text-capitalize mb-2">
+                    <?php 
+                    if ($membership && $membership['PlanName'] === 'Unlimited Class Membership') {
+                        echo 'Unlimited';
+                    } elseif ($membership) {
+                        echo htmlspecialchars($membership['PlanName']);
+                    } else {
+                        echo 'None';
+                    }
+                    ?>
                 </div>
-                <h6>Membership</h6>
+                <h6 class="mt-auto">Membership</h6>
             </div>
         </div>
     </div>
@@ -230,7 +238,7 @@ include 'includes/client_header.php';
                         <?php foreach ($upcomingBookings as $booking): ?>
                             <li class="list-group-item">
                                 <strong><?php echo htmlspecialchars($booking['ClassName']); ?></strong><br>
-                                <small><?php echo format_date($booking['SessionDate']); ?> at <?php echo format_time($booking['Time']); ?></small>
+                                <small><?php echo htmlspecialchars(format_date($booking['SessionDate'])); ?> at <?php echo htmlspecialchars(format_time($booking['Time'])); ?></small>
                             </li>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -284,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             const labels = data.map(item => new Date(item.CreatedAt).toLocaleDateString());
             const weights = data.map(item => item.Weight);
-            const height = <?php echo $user['Height'] ?? 0; ?>;
+            const height = <?php echo json_encode($user['Height'] ?? 0); ?>;
             const bmiData = weights.map(weight => {
                 if (height > 0) {
                     const heightInMeters = height / 100;
@@ -372,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(text, sender) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', sender);
-        messageDiv.innerHTML = text; // Use innerHTML to allow for links
+        messageDiv.textContent = text; // Use textContent to prevent XSS
         chatbotMessages.appendChild(messageDiv);
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
     }
