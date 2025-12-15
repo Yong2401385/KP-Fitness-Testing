@@ -31,30 +31,149 @@ $fitnessLevel = '';
 $workoutDays = [];
 
 // --- Helper functions for the AI engine ---
+
+// Exercise Library with Difficulty Levels
+const EXERCISE_LIBRARY = [
+    'Chest' => [
+        'beginner' => [['name' => 'Push-ups'], ['name' => 'Machine Chest Press'], ['name' => 'Dumbbell Floor Press']],
+        'intermediate' => [['name' => 'Barbell Bench Press'], ['name' => 'Incline Dumbbell Press'], ['name' => 'Dips']],
+        'advanced' => [['name' => 'Weighted Dips'], ['name' => 'Incline Barbell Bench Press'], ['name' => 'Cable Flyes']]
+    ],
+    'Back' => [
+        'beginner' => [['name' => 'Lat Pulldowns'], ['name' => 'Seated Cable Rows'], ['name' => 'Assisted Pull-ups']],
+        'intermediate' => [['name' => 'Barbell Rows'], ['name' => 'Pull-ups'], ['name' => 'Single-arm Dumbbell Row']],
+        'advanced' => [['name' => 'Deadlifts'], ['name' => 'T-Bar Rows'], ['name' => 'Weighted Pull-ups']]
+    ],
+    'Legs' => [
+        'beginner' => [['name' => 'Goblet Squats'], ['name' => 'Leg Press'], ['name' => 'Lunges']],
+        'intermediate' => [['name' => 'Barbell Squats'], ['name' => 'Romanian Deadlifts'], ['name' => 'Bulgarian Split Squats']],
+        'advanced' => [['name' => 'Front Squats'], ['name' => 'Pistol Squats'], ['name' => 'Hack Squats']]
+    ],
+    'Shoulders' => [
+        'beginner' => [['name' => 'Dumbbell Overhead Press'], ['name' => 'Lateral Raises'], ['name' => 'Front Raises']],
+        'intermediate' => [['name' => 'Military Press'], ['name' => 'Arnold Press'], ['name' => 'Face Pulls']],
+        'advanced' => [['name' => 'Handstand Push-ups'], ['name' => 'Push Press'], ['name' => 'Rear Delt Flyes']]
+    ],
+    'Arms' => [
+        'beginner' => [['name' => 'Dumbbell Curls'], ['name' => 'Tricep Pushdowns']],
+        'intermediate' => [['name' => 'Barbell Curls'], ['name' => 'Skull Crushers']],
+        'advanced' => [['name' => 'Hammer Curls'], ['name' => 'Close-grip Bench Press']]
+    ],
+    'Core' => [
+        'beginner' => [['name' => 'Plank'], ['name' => 'Crunches']],
+        'intermediate' => [['name' => 'Leg Raises'], ['name' => 'Russian Twists']],
+        'advanced' => [['name' => 'Ab Wheel Rollouts'], ['name' => 'Hanging Leg Raises']]
+    ],
+    'Cardio' => [
+        'beginner' => [['name' => 'Brisk Walking'], ['name' => 'Cycling (Moderate)']],
+        'intermediate' => [['name' => 'Jogging'], ['name' => 'Rowing (Intervals)']],
+        'advanced' => [['name' => 'Sprinting (HIIT)'], ['name' => 'Jump Rope']]
+    ],
+    'Full Body' => [
+        'beginner' => [['name' => 'Burpees (Modified)'], ['name' => 'Jumping Jacks']],
+        'intermediate' => [['name' => 'Burpees'], ['name' => 'Mountain Climbers']],
+        'advanced' => [['name' => 'Box Jumps'], ['name' => 'Kettlebell Swings']]
+    ]
+];
+
 function generateDayWorkout($day, $goal, $fitnessLevel, $selectedDays) {
-    $workout = [];
     if (!in_array($day, $selectedDays)) {
-        return ['type' => 'Rest Day', 'exercises' => [['name' => 'Rest']]];
+        return ['type' => 'Rest Day', 'exercises' => [['name' => 'Rest & Recovery']]];
     }
 
-    $sets = $fitnessLevel === 'beginner' ? 3 : ($fitnessLevel === 'intermediate' ? 4 : 5);
-    $reps = '8-12';
+    // Determine Workout Split based on Goal
+    $focus = '';
+    $muscleGroups = [];
     
     switch ($goal) {
-        case 'bulking':
-            if (in_array($day, ['Monday', 'Thursday'])) $workout = ['type' => 'Upper Body', 'exercises' => [['name' => 'Bench Press', 'sets' => $sets, 'reps' => $reps], ['name' => 'Barbell Rows', 'sets' => $sets, 'reps' => $reps], ['name' => 'Overhead Press', 'sets' => $sets, 'reps' => $reps]]];
-            elseif (in_array($day, ['Tuesday', 'Friday'])) $workout = ['type' => 'Lower Body', 'exercises' => [['name' => 'Squats', 'sets' => $sets, 'reps' => $reps], ['name' => 'Deadlifts', 'sets' => $sets, 'reps' => $reps], ['name' => 'Calf Raises', 'sets' => $sets, 'reps' => '15-20']]];
-            else $workout = ['type' => 'Cardio & Core', 'exercises' => [['name' => 'Treadmill Running', 'duration' => '20 min'], ['name' => 'Plank', 'sets' => 3, 'reps' => '60s']]];
+        case 'bulking': // Push/Pull/Legs or Upper/Lower split logic
+            if (in_array($day, ['Monday', 'Thursday'])) {
+                $focus = 'Upper Body Power';
+                $muscleGroups = ['Chest', 'Back', 'Shoulders'];
+            } elseif (in_array($day, ['Tuesday', 'Friday'])) {
+                $focus = 'Lower Body Power';
+                $muscleGroups = ['Legs', 'Legs', 'Core']; // Double legs for volume
+            } else {
+                $focus = 'Arm & Shoulder Hypertrophy';
+                $muscleGroups = ['Shoulders', 'Arms', 'Arms'];
+            }
             break;
-        case 'cutting':
-            $workout = ['type' => 'Full Body Circuit', 'exercises' => [['name' => 'Burpees', 'sets' => $sets, 'reps' => '15'], ['name' => 'Jump Squats', 'sets' => $sets, 'reps' => '20'], ['name' => 'Push-ups', 'sets' => $sets, 'reps' => 'Max'], ['name' => 'HIIT on treadmill', 'duration' => '20 min']]];
+            
+        case 'strength':
+            if (in_array($day, ['Monday', 'Friday'])) {
+                $focus = 'Full Body Strength';
+                $muscleGroups = ['Legs', 'Chest', 'Back'];
+            } else {
+                $focus = 'Accessory & Core';
+                $muscleGroups = ['Shoulders', 'Arms', 'Core'];
+            }
             break;
+
+        case 'cutting': // HIIT & Circuits
+            $focus = 'High Intensity Circuit';
+            $muscleGroups = ['Full Body', 'Legs', 'Core', 'Cardio'];
+            break;
+
+        case 'endurance':
+            $focus = 'Endurance Training';
+            $muscleGroups = ['Cardio', 'Legs', 'Core'];
+            break;
+
         default: // General Fitness
-             if (in_array($day, ['Monday', 'Thursday'])) $workout = ['type' => 'Full Body A', 'exercises' => [['name' => 'Goblet Squats', 'sets' => $sets, 'reps' => $reps], ['name' => 'Push-ups', 'sets' => $sets, 'reps' => 'Max'], ['name' => 'Dumbbell Rows', 'sets' => $sets, 'reps' => $reps]]];
-             else $workout = ['type' => 'Full Body B', 'exercises' => [['name' => 'Lunges', 'sets' => $sets, 'reps' => $reps], ['name' => 'Overhead Press', 'sets' => $sets, 'reps' => $reps], ['name' => 'Plank', 'sets' => 3, 'reps' => '60s']]];
+            if (in_array($day, ['Monday', 'Thursday'])) {
+                $focus = 'Full Body A';
+                $muscleGroups = ['Legs', 'Chest', 'Back'];
+            } else {
+                $focus = 'Full Body B';
+                $muscleGroups = ['Legs', 'Shoulders', 'Core'];
+            }
             break;
     }
-    return $workout;
+
+    // Generate Exercises
+    $exercises = [];
+    foreach ($muscleGroups as $group) {
+        // Fallback to beginner if level not found, or random selection
+        $options = EXERCISE_LIBRARY[$group][$fitnessLevel] ?? EXERCISE_LIBRARY[$group]['beginner'];
+        $exercise = $options[array_rand($options)];
+        
+        // Define Sets/Reps/Rest based on Goal & Level
+        $sets = 3;
+        $reps = '10-12';
+        $rest = '60s';
+
+        if ($fitnessLevel === 'intermediate') $sets = 4;
+        if ($fitnessLevel === 'advanced') $sets = 5;
+
+        if ($goal === 'strength') {
+            $sets = 5;
+            $reps = '3-5';
+            $rest = '3-5 min';
+        } elseif ($goal === 'endurance' || $goal === 'cutting') {
+            $sets = 3;
+            $reps = '15-20';
+            $rest = '30-45s';
+        } elseif ($goal === 'bulking') {
+            $sets = 4;
+            $reps = '8-12'; // Hypertrophy range
+            $rest = '90s';
+        }
+
+        // Add details to exercise
+        $exercise['sets'] = $sets;
+        $exercise['reps'] = $reps;
+        $exercise['rest'] = $rest;
+        
+        // Add duration for cardio instead of reps
+        if ($group === 'Cardio') {
+            unset($exercise['sets'], $exercise['reps']);
+            $exercise['duration'] = ($fitnessLevel === 'beginner' ? '20' : '30-45') . ' min';
+        }
+
+        $exercises[] = $exercise;
+    }
+
+    return ['type' => $focus, 'exercises' => $exercises];
 }
 
 // Handle Generate Plan
