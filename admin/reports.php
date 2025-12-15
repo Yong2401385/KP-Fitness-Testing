@@ -17,18 +17,18 @@ try {
     ")->fetchAll(PDO::FETCH_ASSOC);
 
     // Popular classes (all time)
-    $popular_classes = $pdo->query("
-        SELECT c.ClassName, COUNT(r.ReservationID) as booking_count 
-        FROM classes c 
-        JOIN sessions s ON c.ClassID = s.ClassID 
+    $popular_activities = $pdo->query("
+        SELECT a.ClassName, COUNT(r.ReservationID) as booking_count 
+        FROM activities a 
+        JOIN sessions s ON a.ClassID = s.ClassID 
         JOIN reservations r ON s.SessionID = r.SessionID 
-        GROUP BY c.ClassID 
+        GROUP BY a.ClassID 
         ORDER BY booking_count DESC LIMIT 5
     ")->fetchAll(PDO::FETCH_ASSOC);
 
     // Membership distribution
     $membership_dist = $pdo->query("
-        SELECT m.Type, COUNT(u.UserID) as member_count 
+        SELECT m.PlanName, COUNT(u.UserID) as member_count 
         FROM users u
         JOIN membership m ON u.MembershipID = m.MembershipID
         WHERE u.Role = 'client' AND u.IsActive = TRUE
@@ -37,17 +37,17 @@ try {
 
 } catch (PDOException $e) {
     $feedback = ['type' => 'danger', 'message' => 'Could not fetch report data: ' . $e->getMessage()];
-    $revenue_data = $popular_classes = $membership_dist = [];
+    $revenue_data = $popular_activities = $membership_dist = [];
 }
 
 // Prepare data for Chart.js
 $revenue_labels = json_encode(array_column($revenue_data, 'month'));
 $revenue_values = json_encode(array_column($revenue_data, 'revenue'));
 
-$pop_class_labels = json_encode(array_column($popular_classes, 'ClassName'));
-$pop_class_values = json_encode(array_column($popular_classes, 'booking_count'));
+$pop_activity_labels = json_encode(array_column($popular_activities, 'ClassName'));
+$pop_activity_values = json_encode(array_column($popular_activities, 'booking_count'));
 
-$membership_labels = json_encode(array_column($membership_dist, 'Type'));
+$membership_labels = json_encode(array_column($membership_dist, 'PlanName'));
 $membership_values = json_encode(array_column($membership_dist, 'member_count'));
 
 
@@ -80,14 +80,14 @@ include 'includes/admin_header.php';
     <div class="col-lg-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
-                Most Popular Classes
+                Most Popular Activities
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">
-                    <?php foreach($popular_classes as $class): ?>
+                    <?php foreach($popular_activities as $activity): ?>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <?php echo htmlspecialchars($class['ClassName']); ?>
-                            <span class="badge bg-primary rounded-pill"><?php echo $class['booking_count']; ?></span>
+                            <?php echo htmlspecialchars($activity['ClassName']); ?>
+                            <span class="badge bg-primary rounded-pill"><?php echo $activity['booking_count']; ?></span>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -104,6 +104,16 @@ include 'includes/admin_header.php';
             </div>
             <div class="card-body">
                 <canvas id="membershipChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Most Popular Activities
+            </div>
+            <div class="card-body">
+                <canvas id="popActivityChart"></canvas>
             </div>
         </div>
     </div>
@@ -163,6 +173,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 legend: {
                     position: 'top',
                 },
+            }
+        }
+    });
+
+    // Popular Activities Chart
+    const popActivityCtx = document.getElementById('popActivityChart').getContext('2d');
+    new Chart(popActivityCtx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo $pop_activity_labels; ?>,
+            datasets: [{
+                label: 'Bookings',
+                data: <?php echo $pop_activity_values; ?>,
+                backgroundColor: '#17a2b8',
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
             }
         }
     });

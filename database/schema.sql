@@ -1,5 +1,7 @@
 -- KP Fitness Database Schema
+-- Version 2.0
 --
+-- This is a consolidated and refined schema.
 -- To use this file:
 -- 1. Open phpMyAdmin in your XAMPP control panel.
 -- 2. Create a new database named `kp_fitness_db`.
@@ -7,11 +9,57 @@
 -- 4. Go to the "Import" tab.
 -- 5. Choose this `schema.sql` file and click "Go".
 
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
 --
 -- Database: `kp_fitness_db`
 --
-CREATE DATABASE IF NOT EXISTS kp_fitness_db;
-USE kp_fitness_db;
+CREATE DATABASE IF NOT EXISTS `kp_fitness_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `kp_fitness_db`;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_categories`
+--
+
+CREATE TABLE `class_categories` (
+  `CategoryID` int(11) NOT NULL,
+  `CategoryName` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_categories`
+--
+
+INSERT INTO `class_categories` (`CategoryID`, `CategoryName`) VALUES
+(1, 'Cardio'),
+(5, 'Combat'),
+(4, 'HIIT_Circuit'),
+(3, 'MindAndBody'),
+(2, 'Strength');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activities`
+--
+
+CREATE TABLE `activities` (
+  `ClassID` int(11) NOT NULL,
+  `CategoryID` int(11) NOT NULL,
+  `ClassName` varchar(100) NOT NULL,
+  `Description` text DEFAULT NULL,
+  `Duration` int(11) NOT NULL,
+  `MaxCapacity` int(11) NOT NULL DEFAULT 20,
+  `Price` decimal(10,2) NOT NULL DEFAULT 25.00,
+  `Specialist` varchar(255) DEFAULT NULL,
+  `DifficultyLevel` enum('beginner','intermediate','advanced') DEFAULT 'beginner',
+  `IsActive` tinyint(1) DEFAULT 1,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -31,39 +79,12 @@ CREATE TABLE `attendance` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `classes`
---
-
-CREATE TABLE `classes` (
-  `ClassID` int(11) NOT NULL,
-  `ClassName` varchar(100) NOT NULL,
-  `Description` text DEFAULT NULL,
-  `Duration` int(11) NOT NULL,
-  `MaxCapacity` int(11) NOT NULL DEFAULT 20,
-  `DifficultyLevel` enum('beginner','intermediate','advanced') DEFAULT 'beginner',
-  `IsActive` tinyint(1) DEFAULT 1,
-  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `classes`
---
-
-INSERT INTO `classes` (`ClassID`, `ClassName`, `Description`, `Duration`, `MaxCapacity`, `DifficultyLevel`, `IsActive`, `CreatedAt`) VALUES
-(1, 'HIIT Training', 'High-Intensity Interval Training for maximum calorie burn', 45, 20, 'intermediate', 1, '2025-12-10 06:10:48'),
-(2, 'Yoga Flow', 'Mindful movement and breathing exercises', 60, 15, 'beginner', 1, '2025-12-10 06:10:48'),
-(3, 'Strength Training', 'Build muscle and increase strength', 50, 12, 'intermediate', 1, '2025-12-10 06:10:48'),
-(4, 'Cardio Blast', 'High-energy cardio workout', 40, 25, 'beginner', 1, '2025-12-10 06:10:48'),
-(5, 'Pilates Core', 'Core strengthening and flexibility', 55, 18, 'beginner', 1, '2025-12-10 06:10:48');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `membership`
 --
 
 CREATE TABLE `membership` (
   `MembershipID` int(11) NOT NULL,
+  `PlanName` varchar(100) NOT NULL,
   `Type` enum('monthly','yearly','onetime') NOT NULL,
   `Cost` decimal(10,2) NOT NULL,
   `Duration` int(11) NOT NULL,
@@ -71,15 +92,6 @@ CREATE TABLE `membership` (
   `IsActive` tinyint(1) DEFAULT 1,
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `membership`
---
-
-INSERT INTO `membership` (`MembershipID`, `Type`, `Cost`, `Duration`, `Benefits`, `IsActive`, `CreatedAt`) VALUES
-(1, 'monthly', 118.00, 30, 'Unlimited classes, Access to all trainers, Priority booking', 1, '2025-12-10 06:10:48'),
-(2, 'yearly', 1183.00, 365, 'All monthly benefits, 2 months free, Guest passes (up to 2), Exclusive events', 1, '2025-12-10 06:10:48'),
-(3, 'onetime', 35.00, 1, 'Single class access, No commitment, Pay as you go', 1, '2025-12-10 06:10:48');
 
 -- --------------------------------------------------------
 
@@ -117,13 +129,33 @@ CREATE TABLE `payments` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ratings`
+--
+
+CREATE TABLE `ratings` (
+  `RatingID` int(11) NOT NULL,
+  `ReservationID` int(11) NOT NULL,
+  `UserID` int(11) NOT NULL,
+  `TrainerID` int(11) NOT NULL,
+  `RatingScore` int(11) NOT NULL,
+  `Comment` text DEFAULT NULL,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `reservations`
 --
 
 CREATE TABLE `reservations` (
   `ReservationID` int(11) NOT NULL,
   `BookingDate` timestamp NOT NULL DEFAULT current_timestamp(),
-  `Status` enum('booked','cancelled','attended','no_show') DEFAULT 'booked',
+  `Status` enum('booked','cancelled','attended','no_show','Done','Rated') DEFAULT 'booked',
+  `PaidAmount` decimal(10,2) DEFAULT NULL,
+  `is_recurring` tinyint(1) NOT NULL DEFAULT 0,
+  `recurrence_id` varchar(255) DEFAULT NULL,
+  `parent_reservation_id` int(11) DEFAULT NULL,
   `UserID` int(11) NOT NULL,
   `SessionID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -162,8 +194,14 @@ CREATE TABLE `users` (
   `DateOfBirth` date DEFAULT NULL,
   `Height` int(11) DEFAULT NULL,
   `Weight` int(11) DEFAULT NULL,
+  `Gender` enum('Male','Female','Other') DEFAULT NULL,
+  `Specialist` varchar(255) DEFAULT NULL,
+  `WorkingHours` varchar(255) DEFAULT NULL,
+  `JobType` enum('Full-time','Part-time') DEFAULT NULL,
   `ProfilePicture` varchar(255) DEFAULT NULL,
   `MembershipID` int(11) DEFAULT NULL,
+  `MembershipStartDate` date DEFAULT NULL,
+  `MembershipEndDate` date DEFAULT NULL,
   `TrainerID` int(11) DEFAULT NULL,
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
   `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -174,8 +212,8 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`UserID`, `FullName`, `Email`, `Phone`, `Password`, `Role`, `DateOfBirth`, `Height`, `Weight`, `ProfilePicture`, `MembershipID`, `TrainerID`, `CreatedAt`, `UpdatedAt`, `IsActive`) VALUES
-(1, 'System Administrator', 'admin@kpfitness.com', '012-3456789', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-10 06:10:48', '2025-12-10 06:10:48', 1);
+INSERT INTO `users` (`UserID`, `FullName`, `Email`, `Phone`, `Password`, `Role`, `DateOfBirth`, `Height`, `Weight`, `Gender`, `Specialist`, `WorkingHours`, `JobType`, `ProfilePicture`, `MembershipID`, `MembershipStartDate`, `MembershipEndDate`, `TrainerID`, `CreatedAt`, `UpdatedAt`, `IsActive`) VALUES
+(1, 'System Administrator', 'admin@kpfitness.com', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-12-15 08:30:00', '2025-12-15 08:30:00', 1);
 
 -- --------------------------------------------------------
 
@@ -192,7 +230,7 @@ CREATE TABLE `workout_plans` (
   `Weight` int(11) DEFAULT NULL,
   `Goal` enum('bulking','cutting','endurance','strength','general_fitness') NOT NULL,
   `FitnessLevel` enum('beginner','intermediate','advanced') NOT NULL,
-  `PlanDetails` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`PlanDetails`)),
+  `PlanDetails` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
   `IsActive` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -200,6 +238,20 @@ CREATE TABLE `workout_plans` (
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `class_categories`
+--
+ALTER TABLE `class_categories`
+  ADD PRIMARY KEY (`CategoryID`),
+  ADD UNIQUE KEY `CategoryName` (`CategoryName`);
+
+--
+-- Indexes for table `activities`
+--
+ALTER TABLE `activities`
+  ADD PRIMARY KEY (`ClassID`),
+  ADD KEY `fk_category` (`CategoryID`);
 
 --
 -- Indexes for table `attendance`
@@ -210,16 +262,11 @@ ALTER TABLE `attendance`
   ADD KEY `UserID` (`UserID`);
 
 --
--- Indexes for table `classes`
---
-ALTER TABLE `classes`
-  ADD PRIMARY KEY (`ClassID`);
-
---
 -- Indexes for table `membership`
 --
 ALTER TABLE `membership`
-  ADD PRIMARY KEY (`MembershipID`);
+  ADD PRIMARY KEY (`MembershipID`),
+  ADD UNIQUE KEY `PlanName` (`PlanName`);
 
 --
 -- Indexes for table `notifications`
@@ -235,6 +282,15 @@ ALTER TABLE `payments`
   ADD PRIMARY KEY (`PaymentID`),
   ADD KEY `UserID` (`UserID`),
   ADD KEY `MembershipID` (`MembershipID`);
+
+--
+-- Indexes for table `ratings`
+--
+ALTER TABLE `ratings`
+  ADD PRIMARY KEY (`RatingID`),
+  ADD KEY `ReservationID` (`ReservationID`),
+  ADD KEY `UserID` (`UserID`),
+  ADD KEY `TrainerID` (`TrainerID`);
 
 --
 -- Indexes for table `reservations`
@@ -273,22 +329,28 @@ ALTER TABLE `workout_plans`
 --
 
 --
+-- AUTO_INCREMENT for table `class_categories`
+--
+ALTER TABLE `class_categories`
+  MODIFY `CategoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `activities`
+--
+ALTER TABLE `activities`
+  MODIFY `ClassID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
   MODIFY `AttendanceID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `classes`
---
-ALTER TABLE `classes`
-  MODIFY `ClassID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
 -- AUTO_INCREMENT for table `membership`
 --
 ALTER TABLE `membership`
-  MODIFY `MembershipID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `MembershipID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `notifications`
@@ -301,6 +363,12 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `payments`
   MODIFY `PaymentID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `ratings`
+--
+ALTER TABLE `ratings`
+  MODIFY `RatingID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `reservations`
@@ -331,6 +399,12 @@ ALTER TABLE `workout_plans`
 --
 
 --
+-- Constraints for table `activities`
+--
+ALTER TABLE `activities`
+  ADD CONSTRAINT `fk_category` FOREIGN KEY (`CategoryID`) REFERENCES `class_categories` (`CategoryID`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `attendance`
 --
 ALTER TABLE `attendance`
@@ -351,6 +425,14 @@ ALTER TABLE `payments`
   ADD CONSTRAINT `payments_ibfk_2` FOREIGN KEY (`MembershipID`) REFERENCES `membership` (`MembershipID`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `ratings`
+--
+ALTER TABLE `ratings`
+  ADD CONSTRAINT `ratings_ibfk_1` FOREIGN KEY (`ReservationID`) REFERENCES `reservations` (`ReservationID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ratings_ibfk_2` FOREIGN KEY (`UserID`) REFERENCES `users` (`UserID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ratings_ibfk_3` FOREIGN KEY (`TrainerID`) REFERENCES `users` (`UserID`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `reservations`
 --
 ALTER TABLE `reservations`
@@ -361,7 +443,7 @@ ALTER TABLE `reservations`
 -- Constraints for table `sessions`
 --
 ALTER TABLE `sessions`
-  ADD CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`ClassID`) REFERENCES `classes` (`ClassID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `sessions_ibfk_1` FOREIGN KEY (`ClassID`) REFERENCES `activities` (`ClassID`) ON DELETE CASCADE,
   ADD CONSTRAINT `sessions_ibfk_2` FOREIGN KEY (`TrainerID`) REFERENCES `users` (`UserID`) ON DELETE CASCADE;
 
 --

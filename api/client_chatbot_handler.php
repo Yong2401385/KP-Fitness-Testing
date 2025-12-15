@@ -43,15 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Fetch context from the database
     try {
         // Get next booking
-        $stmt_booking = $pdo->prepare("SELECT s.SessionDate, s.Time, c.ClassName FROM reservations r JOIN sessions s ON r.SessionID = s.SessionID JOIN classes c ON s.ClassID = c.ClassID WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE() ORDER BY s.SessionDate, s.Time LIMIT 1");
+        $stmt_booking = $pdo->prepare("SELECT s.SessionDate, s.Time, a.ClassName FROM reservations r JOIN sessions s ON r.SessionID = s.SessionID JOIN activities a ON s.ClassID = a.ClassID WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE() ORDER BY s.SessionDate, s.Time LIMIT 1");
         $stmt_booking->execute([$userId]);
         $nextBooking = $stmt_booking->fetch();
         
         // Get membership
-        $stmt_membership = $pdo->prepare("SELECT m.Type, p.PaymentDate, m.Duration FROM users u JOIN membership m ON u.MembershipID = m.MembershipID LEFT JOIN payments p ON p.UserID = u.UserID AND p.MembershipID = m.MembershipID WHERE u.UserID = ? AND p.Status = 'completed' ORDER BY p.PaymentDate DESC LIMIT 1");
+        $stmt_membership = $pdo->prepare("SELECT m.PlanName, u.MembershipEndDate FROM users u JOIN membership m ON u.MembershipID = m.MembershipID WHERE u.UserID = ?");
         $stmt_membership->execute([$userId]);
         $membership = $stmt_membership->fetch();
-
+        
         // Get latest workout plan
         $stmt_plan = $pdo->prepare("SELECT PlanName FROM workout_plans WHERE UserID = ? ORDER BY CreatedAt DESC LIMIT 1");
         $stmt_plan->execute([$userId]);
@@ -60,8 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Build context string
         $context_info .= "Their next class is: " . ($nextBooking ? htmlspecialchars($nextBooking['ClassName']) . " on " . format_date($nextBooking['SessionDate']) : "None") . ". ";
         if ($membership) {
-            $expiryDate = date('Y-m-d', strtotime($membership['PaymentDate'] . ' + ' . $membership['Duration'] . ' days'));
-            $context_info .= "Their membership is: " . htmlspecialchars($membership['Type']) . " and it is valid until " . format_date($expiryDate) . ". ";
+            $context_info .= "Their membership is: " . htmlspecialchars($membership['PlanName']) . " and it is valid until " . format_date($membership['MembershipEndDate']) . ". ";
         } else {
             $context_info .= "They do not have an active membership. ";
         }

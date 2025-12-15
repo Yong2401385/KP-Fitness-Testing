@@ -40,8 +40,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
         <li>
-            <a href="classes.php" class="nav-link text-white <?= $current_page == 'classes.php' ? 'active' : '' ?>">
-                <i class="fas fa-dumbbell me-2"></i> <span>Class Management</span>
+            <a href="activities.php" class="nav-link text-white <?= $current_page == 'activities.php' ? 'active' : '' ?>">
+                <i class="fas fa-dumbbell me-2"></i> <span>Activity Management</span>
             </a>
         </li>
         <li>

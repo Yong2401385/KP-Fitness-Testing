@@ -20,10 +20,10 @@ try {
     $stmt->execute();
     $totalClients = $stmt->fetchColumn();
     
-    // Total active classes
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM classes WHERE IsActive = TRUE");
+    // Total active activities
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM activities WHERE IsActive = TRUE");
     $stmt->execute();
-    $totalClasses = $stmt->fetchColumn();
+    $totalActivities = $stmt->fetchColumn();
     
     // Total sessions this month
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM sessions WHERE MONTH(SessionDate) = MONTH(CURRENT_DATE()) AND YEAR(SessionDate) = YEAR(CURRENT_DATE())");
@@ -38,7 +38,7 @@ try {
 } catch (PDOException $e) {
     $error_message = 'Error loading dashboard data: ' . $e->getMessage();
     // Initialize stats to 0 on error
-    $totalUsers = $totalTrainers = $totalClients = $totalClasses = $totalSessionsThisMonth = $monthlyRevenue = 0;
+    $totalUsers = $totalTrainers = $totalClients = $totalActivities = $totalSessionsThisMonth = $monthlyRevenue = 0;
 }
 
 include 'includes/admin_header.php';
@@ -85,8 +85,8 @@ include 'includes/admin_header.php';
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-dumbbell"></i></div>
             <div>
-                <div class="fs-4 fw-bold"><?php echo number_format($totalClasses); ?></div>
-                <h6>Active Classes</h6>
+                <div class="fs-4 fw-bold"><?php echo number_format($totalActivities); ?></div>
+                <h6>Active Activities</h6>
             </div>
         </div>
     </div>
@@ -128,8 +128,8 @@ include 'includes/admin_header.php';
         <div class="card quick-action-card h-100 position-relative">
             <div class="card-body">
                 <i class="fas fa-dumbbell fs-1 mb-2"></i>
-                <h5 class="card-title">Manage Classes</h5>
-                <a href="classes.php" class="stretched-link"></a>
+                <h5 class="card-title">Manage Activities</h5>
+                <a href="activities.php" class="stretched-link"></a>
             </div>
         </div>
     </div>

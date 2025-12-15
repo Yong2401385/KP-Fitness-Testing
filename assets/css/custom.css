@@ -80,6 +80,11 @@ body {
     background-color: var(--primary-color);
     color: var(--text-light);
     border-bottom: 1px solid var(--accent-color);
+    font-size: 1.25rem; /* Make card headers larger */
+}
+
+.card-header h5 {
+    font-size: 1.25rem; /* Ensure h5 within card-header is also large */
 }
 
 .card-body {
@@ -214,4 +219,20 @@ body {
 .pricing-card .benefits li {
     margin-bottom: 0.75rem;
     color: var(--text-light);
+}
+
+.quick-action-card:hover {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    border-color: var(--primary-color);
+}
+
+.modal-header h5, .modal-body {
+    color: #000;
+}
+
+.sidebar-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--dark-bg);
 }

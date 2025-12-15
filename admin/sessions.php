@@ -60,9 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['cancel_session']) ||
 try {
     // Fetch sessions
     $stmt = $pdo->prepare("
-        SELECT s.*, c.ClassName, c.MaxCapacity, u.FullName as TrainerName 
+        SELECT s.*, a.ClassName, a.MaxCapacity, u.FullName as TrainerName 
         FROM sessions s
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         JOIN users u ON s.TrainerID = u.UserID
         WHERE u.Role = 'trainer'
         ORDER BY s.SessionDate DESC, s.Time DESC
@@ -70,10 +70,10 @@ try {
     $stmt->execute();
     $sessions = $stmt->fetchAll();
 
-    // Fetch active classes for the dropdown
-    $stmt_classes = $pdo->prepare("SELECT ClassID, ClassName FROM classes WHERE IsActive = TRUE ORDER BY ClassName");
-    $stmt_classes->execute();
-    $active_classes = $stmt_classes->fetchAll();
+    // Fetch active activities for the dropdown
+    $stmt_activities = $pdo->prepare("SELECT ClassID, ClassName FROM activities WHERE IsActive = TRUE ORDER BY ClassName");
+    $stmt_activities->execute();
+    $active_activities = $stmt_activities->fetchAll();
     
     // Fetch active trainers for the dropdown
     $stmt_trainers = $pdo->prepare("SELECT UserID, FullName FROM users WHERE IsActive = TRUE AND Role = 'trainer' ORDER BY FullName");
@@ -82,7 +82,7 @@ try {
 
 } catch (PDOException $e) {
     $feedback = ['type' => 'danger', 'message' => 'Could not fetch data: ' . $e->getMessage()];
-    $sessions = $active_classes = $active_trainers = [];
+    $sessions = $active_activities = $active_trainers = [];
 }
 
 include 'includes/admin_header.php';
@@ -109,11 +109,11 @@ include 'includes/admin_header.php';
             <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="classId" class="form-label">Class</label>
+                    <label for="classId" class="form-label">Activity</label>
                     <select class="form-select" id="classId" name="classId" required>
-                        <option value="">Select a class...</option>
-                        <?php foreach ($active_classes as $class): ?>
-                            <option value="<?php echo $class['ClassID']; ?>"><?php echo htmlspecialchars($class['ClassName']); ?></option>
+                        <option value="">Select an activity...</option>
+                        <?php foreach ($active_activities as $activity): ?>
+                            <option value="<?php echo $activity['ClassID']; ?>"><?php echo htmlspecialchars($activity['ClassName']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -157,7 +157,7 @@ include 'includes/admin_header.php';
                 <thead class="table-dark">
                     <tr>
                         <th>Date & Time</th>
-                        <th>Class</th>
+                        <th>Activity</th>
                         <th>Trainer</th>
                         <th>Room</th>
                         <th>Bookings</th>

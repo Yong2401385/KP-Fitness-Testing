@@ -10,9 +10,9 @@ $feedback = [];
 try {
     // Today's schedule
     $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.Time, c.ClassName, s.Room, s.CurrentBookings, c.MaxCapacity
+        SELECT s.SessionID, s.Time, a.ClassName, s.Room, s.CurrentBookings, a.MaxCapacity
         FROM sessions s
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         WHERE s.TrainerID = ? AND s.SessionDate = CURDATE() AND s.Status = 'scheduled'
         ORDER BY s.Time
     ");
@@ -21,9 +21,9 @@ try {
     
     // Upcoming classes (next 5)
     $stmt = $pdo->prepare("
-        SELECT s.SessionDate, s.Time, c.ClassName
+        SELECT s.SessionDate, s.Time, a.ClassName
         FROM sessions s
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         WHERE s.TrainerID = ? AND s.SessionDate > CURDATE() AND s.Status = 'scheduled'
         ORDER BY s.SessionDate, s.Time
         LIMIT 5

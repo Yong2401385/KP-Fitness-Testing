@@ -65,8 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_attendance'])) {
 try {
     // Get session details
     $stmt = $pdo->prepare("
-        SELECT s.SessionDate, s.Time, c.ClassName 
-        FROM sessions s JOIN classes c ON s.ClassID = c.ClassID 
+        SELECT s.SessionDate, s.Time, a.ClassName 
+        FROM sessions s JOIN activities a ON s.ClassID = a.ClassID 
         WHERE s.SessionID = ?
     ");
     $stmt->execute([$sessionId]);

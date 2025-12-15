@@ -9,9 +9,9 @@ $feedback = [];
 // Fetch all past sessions for this trainer
 try {
     $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.SessionDate, s.Time, c.ClassName, c.DifficultyLevel, s.Room, s.Status
+        SELECT s.SessionID, s.SessionDate, s.Time, a.ClassName, a.DifficultyLevel, s.Room, s.Status
         FROM sessions s
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         WHERE s.TrainerID = ? AND s.SessionDate < CURDATE()
         ORDER BY s.SessionDate DESC, s.Time DESC
     ");

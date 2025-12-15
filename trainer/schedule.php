@@ -10,9 +10,9 @@ $feedback = [];
 try {
     // Fetch all scheduled sessions for this trainer
     $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.SessionDate, s.Time, s.Room, s.Status, s.CurrentBookings, c.ClassName, c.MaxCapacity
+        SELECT s.SessionID, s.SessionDate, s.Time, s.Room, s.Status, s.CurrentBookings, a.ClassName, a.MaxCapacity
         FROM sessions s
-        JOIN classes c ON s.ClassID = c.ClassID
+        JOIN activities a ON s.ClassID = a.ClassID
         WHERE s.TrainerID = ?
         ORDER BY s.SessionDate DESC, s.Time DESC
     ");

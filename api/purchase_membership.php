@@ -33,8 +33,11 @@ try {
         $stmt = $pdo->prepare("INSERT INTO payments (UserID, MembershipID, Amount, PaymentMethod, Status) VALUES (?, ?, ?, 'credit_card', 'completed')");
         $stmt->execute([$userId, $membershipId, $membership['Cost']]);
         
-        $stmt = $pdo->prepare("UPDATE users SET MembershipID = ? WHERE UserID = ?");
-        $stmt->execute([$membershipId, $userId]);
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime("+{$membership['Duration']} days"));
+
+        $stmt = $pdo->prepare("UPDATE users SET MembershipID = ?, MembershipStartDate = ?, MembershipEndDate = ? WHERE UserID = ?");
+        $stmt->execute([$membershipId, $startDate, $endDate, $userId]);
         
         $pdo->commit();
         $response = ['success' => true, 'message' => 'Membership purchased successfully! You can now book classes.'];
