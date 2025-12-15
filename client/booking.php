@@ -36,12 +36,12 @@ $upcomingClasses = $stmt->fetchAll();
 
 // Fetch booking history
 $stmt = $pdo->prepare("
-    SELECT r.ReservationID, CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.ClassName as ActivityName, c.CategoryName, r.Status
+    SELECT r.ReservationID, r.is_recurring, CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.ClassName as ActivityName, c.CategoryName, r.Status
     FROM reservations r
     JOIN sessions s ON r.SessionID = s.SessionID
     JOIN activities a ON s.ClassID = a.ClassID
     JOIN class_categories c ON a.CategoryID = c.CategoryID
-    WHERE r.UserID = ? AND (CONCAT(s.SessionDate, ' ', s.Time) < NOW() OR r.Status != 'booked')
+    WHERE r.UserID = ?
     ORDER BY StartTime DESC
 ");
 $stmt->execute([$userId]);
@@ -141,8 +141,8 @@ include 'includes/client_header.php';
                                         <button class="btn btn-outline-primary btn-sm rate-btn" data-reservation-id="<?php echo $booking['ReservationID']; ?>">Rate</button>
                                     <?php elseif ($booking['Status'] === 'Absent'): ?>
                                         <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingModal">Re-schedule</button>
-                                    <?php elseif ($booking['Status'] === 'Re-scheduled'): ?>
-                                        <button class="btn btn-outline-danger btn-sm cancel-booking-btn" data-reservation-id="<?php echo $booking['ReservationID']; ?>" data-is-recurring="0">Cancel</button>
+                                    <?php elseif ($booking['Status'] === 'Re-scheduled' || $booking['Status'] === 'booked'): ?>
+                                        <button class="btn btn-outline-danger btn-sm cancel-booking-btn" data-reservation-id="<?php echo $booking['ReservationID']; ?>" data-is-recurring="<?php echo $booking['is_recurring']; ?>">Cancel</button>
                                     <?php else: ?>
                                         -
                                     <?php endif; ?>
@@ -265,6 +265,26 @@ include 'includes/client_header.php';
 </div>
 
 
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelModalLabel">Cancel Booking</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="cancel-message">Are you sure you want to cancel this booking?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger d-none" id="cancel-series-btn">Cancel & Stop pre-booking</button>
+                <button type="button" class="btn btn-danger" id="cancel-one-btn">Cancel Booking</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const bookingModalEl = document.getElementById('bookingModal');
@@ -272,10 +292,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const ratingModalEl = document.getElementById('ratingModal');
     const ratingModal = new bootstrap.Modal(ratingModalEl);
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
     
     // Variables to store pending booking details
     let pendingSessionId = null;
     let pendingRepeatWeekly = false;
+    let pendingCancellationId = null;
 
     let calendar = new VanillaCalendar('#calendar-container', {
         settings: {
@@ -324,6 +346,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 500);
 
         }, 2000);
+    });
+
+    // Cancel Modal Logic
+    document.getElementById('cancel-one-btn').addEventListener('click', () => {
+        if (pendingCancellationId) {
+            handleCancellation(pendingCancellationId, 'one');
+            cancelModal.hide();
+        }
+    });
+
+    document.getElementById('cancel-series-btn').addEventListener('click', () => {
+        if (pendingCancellationId) {
+            handleCancellation(pendingCancellationId, 'all');
+            cancelModal.hide();
+        }
     });
 
     // Fetch sessions function
@@ -417,18 +454,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cancel button
         if (e.target.matches('.cancel-booking-btn')) {
             e.preventDefault();
-            const reservationId = e.target.dataset.reservationId;
+            pendingCancellationId = e.target.dataset.reservationId;
             const isRecurring = e.target.dataset.isRecurring === '1';
-            let cancelScope = 'one';
+            
+            const cancelMessage = document.getElementById('cancel-message');
+            const cancelSeriesBtn = document.getElementById('cancel-series-btn');
+            const cancelOneBtn = document.getElementById('cancel-one-btn');
 
             if (isRecurring) {
-                if (confirm("This is a recurring booking. Do you want to cancel all future occurrences?")) {
-                    cancelScope = 'all';
-                }
+                cancelMessage.textContent = "This is a recurring booking. Do you want to cancel just this booking or stop the entire pre-booking series?";
+                cancelSeriesBtn.classList.remove('d-none');
+                cancelOneBtn.textContent = "Only Current Booking";
+            } else {
+                cancelMessage.textContent = "Are you sure you want to cancel this booking?";
+                cancelSeriesBtn.classList.add('d-none');
+                cancelOneBtn.textContent = "Cancel Booking";
             }
-            if (confirm("Are you sure you want to cancel this booking?")) {
-                handleCancellation(reservationId, cancelScope);
-            }
+            
+            cancelModal.show();
         }
         
         // Rate button
