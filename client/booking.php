@@ -20,20 +20,6 @@ $isPremiumMember = $membership && in_array($membership['PlanName'], ['Annual Cla
 $stmt = $pdo->query("SELECT CategoryID, CategoryName FROM class_categories ORDER BY CategoryName");
 $allCategories = $stmt->fetchAll();
 
-// Fetch upcoming classes
-$stmt = $pdo->prepare("
-    SELECT r.ReservationID, r.is_recurring, s.SessionDate, s.Time, s.Room, a.ClassName as ActivityName, c.CategoryName, a.DifficultyLevel, u.FullName as TrainerName
-    FROM reservations r
-    JOIN sessions s ON r.SessionID = s.SessionID
-    JOIN activities a ON s.ClassID = a.ClassID
-    JOIN class_categories c ON a.CategoryID = c.CategoryID
-    JOIN users u ON s.TrainerID = u.UserID
-    WHERE r.UserID = ? AND r.Status = 'booked' AND CONCAT(s.SessionDate, ' ', s.Time) >= NOW()
-    ORDER BY CONCAT(s.SessionDate, ' ', s.Time) ASC
-");
-$stmt->execute([$userId]);
-$upcomingClasses = $stmt->fetchAll();
-
 // Fetch booking history
 $stmt = $pdo->prepare("
     SELECT r.ReservationID, r.is_recurring, CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.ClassName as ActivityName, c.CategoryName, r.Status
@@ -68,44 +54,24 @@ include 'includes/client_header.php';
     </div>
 </div>
 
-<!-- Upcoming Classes -->
+<!-- My Schedule -->
 <div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Upcoming Classes</h5>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">My Schedule</h5>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="prev-week-btn"><i class="fas fa-chevron-left"></i></button>
+            <span class="btn btn-outline-secondary btn-sm disabled" id="current-week-display" style="min-width: 200px; color: #333;">...</span>
+            <button class="btn btn-outline-secondary btn-sm" id="next-week-btn"><i class="fas fa-chevron-right"></i></button>
+        </div>
     </div>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Class</th>
-                        <th>Details</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($upcomingClasses)): ?>
-                        <tr><td colspan="3" class="text-center text-muted">You have no upcoming classes.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($upcomingClasses as $booking): ?>
-                            <tr>
-                                <td>
-                                    <div class="fw-bold"><?php echo htmlspecialchars($booking['CategoryName']); ?> - <?php echo htmlspecialchars($booking['ActivityName']); ?> <?php if ($booking['is_recurring']) echo '<i class="fas fa-sync-alt text-primary" title="Recurring Booking"></i>'; ?></div>
-                                    <div><?php echo htmlspecialchars(format_date($booking['SessionDate']) . ' at ' . format_time($booking['Time'])); ?></div>
-                                </td>
-                                <td>
-                                    <div><i class="fas fa-user-tie me-2 text-muted"></i><?php echo htmlspecialchars($booking['TrainerName']); ?></div>
-                                    <div><i class="fas fa-map-marker-alt me-2 text-muted"></i><?php echo htmlspecialchars($booking['Room'] ?? 'N/A'); ?></div>
-                                    <div><i class="fas fa-tachometer-alt me-2 text-muted"></i><?php echo htmlspecialchars(ucfirst($booking['DifficultyLevel'])); ?></div>
-                                </td>
-                                <td>
-                                    <button class="btn btn-outline-danger btn-sm cancel-booking-btn" data-reservation-id="<?php echo $booking['ReservationID']; ?>" data-is-recurring="<?php echo $booking['is_recurring']; ?>">Cancel</button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+        <div id="my-schedule-container" class="list-group list-group-flush">
+            <!-- Schedule items will be loaded here -->
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -294,6 +260,97 @@ document.addEventListener('DOMContentLoaded', () => {
     const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
     const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
     
+    // --- My Schedule Logic ---
+    let currentWeekStart = getStartOfWeek(new Date());
+
+    function getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        return new Date(d.setDate(diff));
+    }
+
+    function formatDate(date) {
+        return date.toISOString().split('T')[0];
+    }
+    
+    function updateScheduleDisplay() {
+        const start = new Date(currentWeekStart);
+        const end = new Date(currentWeekStart);
+        end.setDate(end.getDate() + 6);
+
+        const options = { month: 'short', day: 'numeric' };
+        document.getElementById('current-week-display').textContent = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+        
+        fetchSchedule(formatDate(start), formatDate(end));
+    }
+
+    function fetchSchedule(startDate, endDate) {
+        const container = document.getElementById('my-schedule-container');
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+        fetch(`../api/get_user_schedule.php?start_date=${startDate}&end_date=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = '';
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-4">No classes scheduled for this week.</div>';
+                    return;
+                }
+
+                // Group by date
+                const grouped = {};
+                data.forEach(item => {
+                    if (!grouped[item.SessionDate]) grouped[item.SessionDate] = [];
+                    grouped[item.SessionDate].push(item);
+                });
+
+                // Render
+                Object.keys(grouped).forEach(date => {
+                    const dateObj = new Date(date);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'list-group-item list-group-item-secondary fw-bold';
+                    dayHeader.textContent = `${dayName}, ${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                    container.appendChild(dayHeader);
+
+                    grouped[date].forEach(session => {
+                        const item = document.createElement('div');
+                        item.className = 'list-group-item';
+                        item.innerHTML = `
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1 text-primary">${session.ActivityName}</h6>
+                                    <small class="text-muted"><i class="far fa-clock me-1"></i>${session.Time}</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="d-block text-muted">Trainer: ${session.TrainerName}</small>
+                                    <small class="d-block text-muted">Room: ${session.Room || 'N/A'}</small>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                });
+            })
+            .catch(err => {
+                container.innerHTML = '<div class="text-center text-danger py-4">Failed to load schedule.</div>';
+            });
+    }
+
+    document.getElementById('prev-week-btn').addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        updateScheduleDisplay();
+    });
+
+    document.getElementById('next-week-btn').addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        updateScheduleDisplay();
+    });
+
+    // Initial load
+    updateScheduleDisplay();
+
     // Variables to store pending booking details
     let pendingSessionId = null;
     let pendingRepeatWeekly = false;
