@@ -135,24 +135,26 @@ include 'includes/client_header.php';
                 <div class="row">
                     <!-- Filter and Calendar -->
                     <div class="col-lg-7">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="category-filter" class="form-label">Filter by Category</label>
-                                <select id="category-filter" class="form-select">
-                                    <option value="">All Categories</option>
-                                    <?php foreach ($allCategories as $category): ?>
-                                        <option value="<?php echo $category['CategoryID']; ?>"><?php echo htmlspecialchars($category['CategoryName']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="difficulty-filter" class="form-label">Filter by Difficulty</label>
-                                <select id="difficulty-filter" class="form-select">
-                                    <option value="">All Levels</option>
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">Intermediate</option>
-                                    <option value="advanced">Advanced</option>
-                                </select>
+                        <div class="filter-card">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="category-filter" class="form-label">Filter by Category</label>
+                                    <select id="category-filter" class="form-select">
+                                        <option value="">All Categories</option>
+                                        <?php foreach ($allCategories as $category): ?>
+                                            <option value="<?php echo $category['CategoryID']; ?>"><?php echo htmlspecialchars($category['CategoryName']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="difficulty-filter" class="form-label">Filter by Difficulty</label>
+                                    <select id="difficulty-filter" class="form-select">
+                                        <option value="">All Levels</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="advanced">Advanced</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div id="calendar-container" style="width: 100%; height: 400px;"></div>
@@ -732,6 +734,54 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 .modal-body {
     color: #000;
+}
+
+/* Custom Calendar Styles */
+#calendar-container .vanilla-calendar {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    padding: 15px;
+}
+#calendar-container .vanilla-calendar-day__btn_selected {
+    background-color: #ff8c00 !important;
+    color: white !important;
+    border-radius: 50%;
+}
+#calendar-container .vanilla-calendar-day__btn_today {
+    color: #ff8c00 !important;
+    font-weight: bold;
+    border: 1px solid #ff8c00;
+    border-radius: 50%;
+}
+#calendar-container .vanilla-calendar-header__content {
+    color: #333;
+    font-weight: bold;
+}
+#calendar-container .vanilla-calendar-week__day {
+    color: #666;
+}
+
+/* Filter Card Styles */
+.filter-card {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-left: 5px solid #ff8c00; /* Orange accent */
+    margin-bottom: 20px;
+}
+.filter-card .form-label {
+    font-weight: 600;
+    color: #444;
+}
+.filter-card .form-select {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+.filter-card .form-select:focus {
+    border-color: #ff8c00;
+    box-shadow: 0 0 0 0.25rem rgba(255, 140, 0, 0.25);
 }
 </style>
 
