@@ -38,8 +38,7 @@ function validate_csrf_token($token) {
         // Token is invalid, stop the script
         die('CSRF validation failed.');
     }
-    // Token is valid, generate a new one for the next request
-    generate_csrf_token();
+    // Token is valid
 }
 
 
