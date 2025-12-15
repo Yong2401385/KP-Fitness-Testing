@@ -55,7 +55,7 @@ include 'includes/client_header.php';
 </div>
 
 <!-- My Schedule -->
-<div class="card mb-4 bg-secondary text-white">
+<div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">My Schedule</h5>
         <div class="btn-group">
@@ -77,13 +77,13 @@ include 'includes/client_header.php';
 </div>
 
 <!-- Booking History -->
-<div class="card bg-secondary text-white">
+<div class="card">
     <div class="card-header">
         <h5 class="mb-0">Booking History</h5>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover table-dark">
+            <table class="table table-hover">
                 <thead class="table-light">
                     <tr><th>Date</th><th>Class</th><th>Status</th><th>Action</th></tr>
                 </thead>
@@ -135,24 +135,26 @@ include 'includes/client_header.php';
                 <div class="row">
                     <!-- Filter and Calendar -->
                     <div class="col-lg-7">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="category-filter" class="form-label">Filter by Category</label>
-                                <select id="category-filter" class="form-select">
-                                    <option value="">All Categories</option>
-                                    <?php foreach ($allCategories as $category): ?>
-                                        <option value="<?php echo $category['CategoryID']; ?>"><?php echo htmlspecialchars($category['CategoryName']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="difficulty-filter" class="form-label">Filter by Difficulty</label>
-                                <select id="difficulty-filter" class="form-select">
-                                    <option value="">All Levels</option>
-                                    <option value="beginner">Beginner</option>
-                                    <option value="intermediate">Intermediate</option>
-                                    <option value="advanced">Advanced</option>
-                                </select>
+                        <div class="bg-secondary text-white p-3 rounded mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="category-filter" class="form-label">Filter by Category</label>
+                                    <select id="category-filter" class="form-select">
+                                        <option value="">All Categories</option>
+                                        <?php foreach ($allCategories as $category): ?>
+                                            <option value="<?php echo $category['CategoryID']; ?>"><?php echo htmlspecialchars($category['CategoryName']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="difficulty-filter" class="form-label">Filter by Difficulty</label>
+                                    <select id="difficulty-filter" class="form-select">
+                                        <option value="">All Levels</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="advanced">Advanced</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div id="calendar-container" style="width: 100%; height: 400px;"></div>
