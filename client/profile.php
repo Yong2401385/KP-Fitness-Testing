@@ -220,21 +220,21 @@ include 'includes/client_header.php';
                 <div class="mb-3">
                     <label for="currentPassword" class="form-label">Current Password</label>
                     <div class="input-group">
-                        <input type="password" class="form-control bg-white" id="currentPassword" name="currentPassword" required>
+                        <input type="password" class="form-control bg-white text-dark" id="currentPassword" name="currentPassword" required>
                         <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="newPassword" class="form-label">New Password</label>
                     <div class="input-group">
-                        <input type="password" class="form-control bg-white" id="newPassword" name="newPassword" required>
+                        <input type="password" class="form-control bg-white text-dark" id="newPassword" name="newPassword" required>
                         <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
                     </div>
                 </div>
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label">Confirm New Password</label>
                     <div class="input-group">
-                        <input type="password" class="form-control bg-white" id="confirmPassword" name="confirmPassword" required>
+                        <input type="password" class="form-control bg-white text-dark" id="confirmPassword" name="confirmPassword" required>
                         <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
                     </div>
                 </div>
