@@ -219,15 +219,24 @@ include 'includes/client_header.php';
             <div class="modal-body">
                 <div class="mb-3">
                     <label for="currentPassword" class="form-label">Current Password</label>
-                    <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                    <div class="input-group">
+                        <input type="password" class="form-control bg-white" id="currentPassword" name="currentPassword" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="newPassword" class="form-label">New Password</label>
-                    <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                    <div class="input-group">
+                        <input type="password" class="form-control bg-white" id="newPassword" name="newPassword" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                    <div class="input-group">
+                        <input type="password" class="form-control bg-white" id="confirmPassword" name="confirmPassword" required>
+                        <button class="btn btn-outline-secondary toggle-password" type="button"><i class="fas fa-eye"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -303,6 +312,23 @@ document.addEventListener('DOMContentLoaded', () => {
             editBtn.classList.remove('btn-outline-primary');
             editBtn.classList.add('btn-outline-danger');
         }
+    });
+
+    // Password Visibility Toggle
+    document.querySelectorAll('.toggle-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = btn.previousElementSibling;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
     });
 
     // Profile Picture Auto-Upload
