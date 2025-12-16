@@ -83,40 +83,32 @@ const EXERCISE_LIBRARY = [
     ]
 ];
 
-function generateDayWorkout($day, $goal, $fitnessLevel, $selectedDays) {
-    if (!in_array($day, $selectedDays)) {
-        return ['type' => 'Rest Day', 'exercises' => [['name' => 'Rest & Recovery']]];
-    }
-
-    // Determine Workout Split based on Goal
+function generateWorkoutSession($sessionIndex, $goal, $fitnessLevel) {
+    // Determine Workout Split based on Goal & Sequence
     $focus = '';
     $muscleGroups = [];
     
     switch ($goal) {
-        case 'bulking': // Push/Pull/Legs or Upper/Lower split logic
-            if (in_array($day, ['Monday', 'Thursday'])) {
-                $focus = 'Upper Body Power';
-                $muscleGroups = ['Chest', 'Back', 'Shoulders'];
-            } elseif (in_array($day, ['Tuesday', 'Friday'])) {
-                $focus = 'Lower Body Power';
-                $muscleGroups = ['Legs', 'Legs', 'Core']; // Double legs for volume
-            } else {
-                $focus = 'Arm & Shoulder Hypertrophy';
-                $muscleGroups = ['Shoulders', 'Arms', 'Arms'];
-            }
+        case 'bulking': 
+            // Cycle: Upper Power -> Lower Power -> Hypertrophy
+            $cycle = ['Upper Body Power', 'Lower Body Power', 'Arm & Shoulder Hypertrophy'];
+            $focus = $cycle[$sessionIndex % 3];
+            
+            if ($focus === 'Upper Body Power') $muscleGroups = ['Chest', 'Back', 'Shoulders'];
+            elseif ($focus === 'Lower Body Power') $muscleGroups = ['Legs', 'Legs', 'Core'];
+            else $muscleGroups = ['Shoulders', 'Arms', 'Arms'];
             break;
             
         case 'strength':
-            if (in_array($day, ['Monday', 'Friday'])) {
-                $focus = 'Full Body Strength';
-                $muscleGroups = ['Legs', 'Chest', 'Back'];
-            } else {
-                $focus = 'Accessory & Core';
-                $muscleGroups = ['Shoulders', 'Arms', 'Core'];
-            }
+            // Cycle: Full Body -> Accessory
+            $cycle = ['Full Body Strength', 'Accessory & Core'];
+            $focus = $cycle[$sessionIndex % 2];
+            
+            if ($focus === 'Full Body Strength') $muscleGroups = ['Legs', 'Chest', 'Back'];
+            else $muscleGroups = ['Shoulders', 'Arms', 'Core'];
             break;
 
-        case 'cutting': // HIIT & Circuits
+        case 'cutting': 
             $focus = 'High Intensity Circuit';
             $muscleGroups = ['Full Body', 'Legs', 'Core', 'Cardio'];
             break;
@@ -127,24 +119,37 @@ function generateDayWorkout($day, $goal, $fitnessLevel, $selectedDays) {
             break;
 
         default: // General Fitness
-            if (in_array($day, ['Monday', 'Thursday'])) {
-                $focus = 'Full Body A';
-                $muscleGroups = ['Legs', 'Chest', 'Back'];
-            } else {
-                $focus = 'Full Body B';
-                $muscleGroups = ['Legs', 'Shoulders', 'Core'];
-            }
+            // Cycle: Full Body A -> Full Body B
+            $cycle = ['Full Body A', 'Full Body B'];
+            $focus = $cycle[$sessionIndex % 2];
+            
+            if ($focus === 'Full Body A') $muscleGroups = ['Legs', 'Chest', 'Back'];
+            else $muscleGroups = ['Legs', 'Shoulders', 'Core'];
             break;
     }
 
-    // Generate Exercises
+    // Generate Exercises with Variety Check
     $exercises = [];
+    $usedExercises = []; // Track used names for this session
+
     foreach ($muscleGroups as $group) {
-        // Fallback to beginner if level not found, or random selection
         $options = EXERCISE_LIBRARY[$group][$fitnessLevel] ?? EXERCISE_LIBRARY[$group]['beginner'];
-        $exercise = $options[array_rand($options)];
         
-        // Define Sets/Reps/Rest based on Goal & Level
+        // Filter out already used exercises from options
+        $availableOptions = array_filter($options, function($ex) use ($usedExercises) {
+            return !in_array($ex['name'], $usedExercises);
+        });
+
+        // If we ran out of unique exercises (rare), reset to full list
+        if (empty($availableOptions)) {
+            $availableOptions = $options;
+        }
+
+        // Pick random
+        $exercise = $availableOptions[array_rand($availableOptions)];
+        $usedExercises[] = $exercise['name']; // Mark as used
+        
+        // Define Sets/Reps/Rest
         $sets = 3;
         $reps = '10-12';
         $rest = '60s';
@@ -162,16 +167,14 @@ function generateDayWorkout($day, $goal, $fitnessLevel, $selectedDays) {
             $rest = '30-45s';
         } elseif ($goal === 'bulking') {
             $sets = 4;
-            $reps = '8-12'; // Hypertrophy range
+            $reps = '8-12'; 
             $rest = '90s';
         }
 
-        // Add details to exercise
         $exercise['sets'] = $sets;
         $exercise['reps'] = $reps;
         $exercise['rest'] = $rest;
         
-        // Add duration for cardio instead of reps
         if ($group === 'Cardio') {
             unset($exercise['sets'], $exercise['reps']);
             $exercise['duration'] = ($fitnessLevel === 'beginner' ? '20' : '30-45') . ' min';
@@ -191,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_plan'])) {
     $fitnessLevel = sanitize_input($_POST['fitnessLevel']);
     $workoutDays = $_POST['workoutDays'] ?? [];
 
-    if ($userTier !== 'premium') { // Enforce basic options for non-premium
+    if ($userTier !== 'premium') { 
         $goal = 'general_fitness';
         $fitnessLevel = 'beginner';
     }
@@ -201,11 +204,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_plan'])) {
     } else {
         $allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         $schedule = [];
+        $sessionIndex = 0; // Track which workout number we are on (0, 1, 2...)
+
         foreach ($allDays as $day) {
-            $schedule[$day] = generateDayWorkout($day, $goal, $fitnessLevel, $workoutDays);
+            if (in_array($day, $workoutDays)) {
+                $schedule[$day] = generateWorkoutSession($sessionIndex, $goal, $fitnessLevel);
+                $sessionIndex++;
+            } else {
+                $schedule[$day] = ['type' => 'Rest Day', 'exercises' => [['name' => 'Rest & Recovery']]];
+            }
         }
-        $workoutPlan = ['schedule' => $schedule, 'name' => $planName, 'goal' => $goal, 'fitnessLevel' => $fitnessLevel, 'workoutDays' => $workoutDays];
-        $_SESSION['generated_plan'] = $workoutPlan; // Store generated plan in session
+        
+        $workoutPlan = [
+            'schedule' => $schedule, 
+            'name' => $planName, 
+            'goal' => $goal, 
+            'fitnessLevel' => $fitnessLevel, 
+            'workoutDays' => $workoutDays,
+            'progressiveOverloadTip' => "Tip: To keep progressing, aim to increase the weight by 2.5kg or add 1-2 reps every week!"
+        ];
+        
+        $_SESSION['generated_plan'] = $workoutPlan; 
         $feedback = ['type' => 'info', 'message' => 'Plan generated. Review and save below.'];
     }
 }
@@ -327,17 +346,23 @@ include 'includes/client_header.php';
                         <label for="fitnessLevel" class="form-label">Fitness Level</label>
                         <select class="form-select" name="fitnessLevel" id="fitnessLevel" required <?php echo $userTier !== 'premium' ? 'disabled' : ''; ?>>
                             <option value="">-- Select Your Level --</option>
-                            <option value="beginner" <?php echo ($fitnessLevel === 'beginner' || $userTier !== 'premium') ? 'selected' : ''; ?>>Beginner</option>
-                            <option value="intermediate" <?php echo $fitnessLevel === 'intermediate' && $userTier === 'premium' ? 'selected' : ''; ?>>Intermediate</option>
-                            <option value="advanced" <?php echo $fitnessLevel === 'advanced' && $userTier === 'premium' ? 'selected' : ''; ?>>Advanced</option>
+                            <option value="beginner" <?php echo ($fitnessLevel === 'beginner' || $userTier !== 'premium') ? 'selected' : ''; ?>>Beginner (3 Days/Week)</option>
+                            <option value="intermediate" <?php echo $fitnessLevel === 'intermediate' && $userTier === 'premium' ? 'selected' : ''; ?>>Intermediate (4 Days/Week)</option>
+                            <option value="advanced" <?php echo $fitnessLevel === 'advanced' && $userTier === 'premium' ? 'selected' : ''; ?>>Advanced (5 Days/Week)</option>
                         </select>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="customDays" name="customDays">
+                            <label class="form-check-label" for="customDays">
+                                Customize your Workout Days (Override defaults)
+                            </label>
+                        </div>
                         <?php if ($userTier !== 'premium'): ?>
                             <div class="lock-overlay" title="Upgrade to an Unlimited or higher tier membership to unlock more levels."></div>
                         <?php endif; ?>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Workout Days (select at least 3)</label>
-                        <div class="d-flex flex-wrap">
+                        <div class="d-flex flex-wrap" id="workoutDaysContainer">
                             <?php 
                             $allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
                             foreach ($allDays as $day):
@@ -373,6 +398,11 @@ include 'includes/client_header.php';
             </div>
             <div class="card-body">
                 <?php if ($workoutPlan && isset($workoutPlan['schedule'])): ?>
+                    <?php if (isset($workoutPlan['progressiveOverloadTip'])): ?>
+                        <div class="alert alert-info border-0 shadow-sm mb-3">
+                            <i class="fas fa-info-circle me-2"></i> <strong>Pro Tip:</strong> <?php echo htmlspecialchars($workoutPlan['progressiveOverloadTip']); ?>
+                        </div>
+                    <?php endif; ?>
                     <div class="accordion accordion-flush" id="workoutAccordion">
                         <?php foreach($workoutPlan['schedule'] as $day => $workout): ?>
                             <div class="accordion-item">
@@ -480,17 +510,6 @@ include 'includes/client_header.php';
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('generator-form');
-    form.addEventListener('submit', function(e) {
-        const checkedDays = form.querySelectorAll('input[name="workoutDays[]"]:checked').length;
-        if (checkedDays < 3) {
-            e.preventDefault();
-            alert('Please select at least 3 workout days.');
-        }
-    });
-});
-</script>
+<script src="../assets/js/client-workout-planner.js"></script>
 
 <?php include 'includes/client_footer.php'; ?>

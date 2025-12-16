@@ -41,5 +41,6 @@ try {
     echo json_encode($sessions);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    error_log('Database error in get_sessions.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'An internal error occurred. Please try again later.']);
 }

@@ -18,22 +18,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile'])) {
     $dateOfBirth = !empty($_POST['dateOfBirth']) ? sanitize_input($_POST['dateOfBirth']) : null;
     $height = !empty($_POST['height']) ? intval($_POST['height']) : null;
     $weight = !empty($_POST['weight']) ? intval($_POST['weight']) : null;
+    $gender = !empty($_POST['gender']) ? sanitize_input($_POST['gender']) : null; // New: Get gender
 
     // Validation
-    $validPhone = true;
+    $validPhone = true; // Initialize validPhone
     if ($phone) {
-        // Malaysian phone number regex (supports +601..., 601..., 01...)
-        if (!preg_match('/^(\+?6?01)[0-46-9]-*[0-9]{7,8}$/', $phone)) {
+        // Malaysian phone number regex: 01X-XXX XXXX or 01X-XXXX XXXX
+        if (!preg_match('/^01\d-\d{3,4} \d{4}$/', $phone)) {
             $validPhone = false;
-            $feedbackMessage = 'Invalid phone number format. Please use a valid Malaysian format (e.g., 0123456789).';
+            $feedbackMessage = 'Invalid phone number format. Please use the format 01X-XXX XXXX or 01X-XXXX XXXX.';
             $feedbackType = 'danger';
         }
     }
 
-    if ($validPhone) {
+    // Validation - Add gender validation
+    $validGender = true;
+    if ($gender && !in_array($gender, ['Male', 'Female', 'Other'])) {
+        $validGender = false;
+        $feedbackMessage = 'Invalid gender selected.';
+        $feedbackType = 'danger';
+    }
+
+    if ($validPhone && $validGender) {
         try {
-            $stmt = $pdo->prepare("UPDATE users SET FullName = ?, Phone = ?, DateOfBirth = ?, Height = ?, Weight = ? WHERE UserID = ?");
-            if ($stmt->execute([$fullName, $phone, $dateOfBirth, $height, $weight, $userId])) {
+            $stmt = $pdo->prepare("UPDATE users SET FullName = ?, Phone = ?, DateOfBirth = ?, Height = ?, Weight = ?, Gender = ? WHERE UserID = ?");
+            if ($stmt->execute([$fullName, $phone, $dateOfBirth, $height, $weight, $gender, $userId])) {
+                create_notification($userId, 'Profile Updated', 'Your profile information has been successfully updated.', 'success');
                 $feedbackMessage = 'Profile updated successfully!';
                 $feedbackType = 'success';
             } else {
@@ -67,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 $newHashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
                 $stmt = $pdo->prepare("UPDATE users SET Password = ? WHERE UserID = ?");
                 if ($stmt->execute([$newHashedPassword, $userId])) {
+                    create_notification($userId, 'Password Changed', 'Your account password was recently changed. If this wasn\'t you, contact support immediately.', 'warning');
                     $feedbackMessage = 'Password changed successfully.';
                     $feedbackType = 'success';
                 } else {
@@ -113,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePicture'])) {
             if (move_uploaded_file($_FILES["profilePicture"]["tmp_name"], $target_file)) {
                 $stmt = $pdo->prepare("UPDATE users SET ProfilePicture = ? WHERE UserID = ?");
                 $stmt->execute([$target_file, $userId]);
+                create_notification($userId, 'Profile Picture Updated', 'Your profile picture has been updated.', 'success');
                 $feedbackMessage = 'Profile picture updated.';
                 $feedbackType = 'success';
             } else {
@@ -124,31 +136,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profilePicture'])) {
 }
 
 
-// Fetch user data for display
-$stmt = $pdo->prepare("SELECT FullName, Email, Phone, DateOfBirth, Height, Weight, ProfilePicture FROM users WHERE UserID = ?");
+// Fetch user data for display (or use posted data if available to preserve input on error)
+$stmt = $pdo->prepare("SELECT FullName, Email, Phone, DateOfBirth, Height, Weight, Gender, ProfilePicture FROM users WHERE UserID = ?");
 $stmt->execute([$userId]);
 $user = $stmt->fetch();
+
+// If POST request failed, overwrite user data with POST data so fields don't reset
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile']) && $feedbackType === 'danger') {
+    $user['FullName'] = $_POST['fullName'];
+    $user['Phone'] = $_POST['phone'];
+    $user['DateOfBirth'] = $_POST['dateOfBirth'];
+    $user['Height'] = $_POST['height'];
+    $user['Weight'] = $_POST['weight'];
+    $user['Gender'] = $_POST['gender']; // New: Retain gender on error
+}
 
 include 'includes/client_header.php';
 ?>
 
-<div class="d-flex justify-content-between align-items-center pt-3 pb-3 mb-3 border-bottom">
-    <div class="d-flex align-items-center">
-        <h1 class="h2 me-3 mb-0">My Profile</h1>
-        <button class="btn btn-sm btn-outline-primary" id="edit-profile-btn">
-            <i class="fas fa-edit"></i> Edit
-        </button>
-    </div>
-</div>
-
-<div class="container" style="max-width: 800px;">
+<div class="container mt-4" style="max-width: 800px;">
     <form id="profile-form" action="profile.php" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
         
         <!-- Profile Picture Section -->
         <div class="text-center mb-4">
             <div class="profile-picture-wrapper">
-                <img src="<?php echo htmlspecialchars($user['ProfilePicture'] ?? '../assets/images/default-avatar.png'); ?>" alt="Profile Picture" id="profile-pic-preview" class="profile-img">
+                <img src="<?php echo htmlspecialchars($user['ProfilePicture'] ?? '../assets/images/default-avatar.svg'); ?>" 
+                     alt="Profile Picture" 
+                     id="profile-pic-preview" 
+                     class="profile-img"
+                     onerror="this.onerror=null; this.src='../assets/images/default-avatar.svg';">
                 <label for="profilePicture" class="profile-pic-btn" title="Change Profile Picture">
                     <i class="fas fa-camera"></i>
                 </label>
@@ -160,7 +177,14 @@ include 'includes/client_header.php';
 
         <!-- Details Section -->
         <div class="card shadow-sm">
-            <div class="card-body p-4">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold mb-0">My Profile</h3>
+                    <button class="btn btn-primary" id="edit-profile-btn" style="position: absolute; top: 20px; right: 20px;">
+                        <i class="fas fa-edit me-2"></i>Edit Profile
+                    </button>
+                </div>
+
                 <div class="mb-3">
                     <label for="fullName" class="form-label fw-bold">Full Name</label>
                     <input type="text" class="form-control" id="fullName" name="fullName" value="<?php echo htmlspecialchars($user['FullName'] ?? ''); ?>" readonly>
@@ -180,8 +204,21 @@ include 'includes/client_header.php';
                 </div>
 
                 <div class="mb-3">
-                    <label for="phone" class="form-label fw-bold">Contact (Malaysia Format)</label>
-                    <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($user['Phone'] ?? ''); ?>" placeholder="e.g. 0123456789" readonly>
+                    <label for="phone" class="form-label fw-bold">Contact</label>
+                    <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($user['Phone'] ?? ''); ?>" placeholder="e.g. 01X-XXX XXXX" readonly>
+                    <div id="phone-error" class="invalid-feedback d-none">
+                        <i class="fas fa-exclamation-circle"></i> Invalid format. Use: 01X-XXX XXXX (10 digits) or 01X-XXXX XXXX (11 digits)
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="gender" class="form-label fw-bold">Gender</label>
+                    <select class="form-select" id="gender" name="gender" disabled style="background-color: #2d2d2d; color: #fff; border: 1px solid rgba(255, 107, 0, 0.2);">
+                        <option value="">Select Gender</option>
+                        <option value="Male" <?php echo ($user['Gender'] ?? '') == 'Male' ? 'selected' : ''; ?>>Male</option>
+                        <option value="Female" <?php echo ($user['Gender'] ?? '') == 'Female' ? 'selected' : ''; ?>>Female</option>
+                        <option value="Other" <?php echo ($user['Gender'] ?? '') == 'Other' ? 'selected' : ''; ?>>Other</option>
+                    </select>
                 </div>
 
                 <div class="mb-3">
@@ -259,109 +296,39 @@ include 'includes/client_header.php';
         height: 150px;
         border-radius: 50%;
         object-fit: cover;
-        border: 3px solid #dee2e6;
+        border: 4px solid #fff; /* Thicker white border for image */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* Subtle shadow for image */
     }
     .profile-pic-btn {
         position: absolute;
-        bottom: 0;
-        right: 0;
-        background: #007bff;
+        bottom: 5px;
+        right: 5px;
+        background: #ff6b00; /* Primary Orange */
         color: white;
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 45px; /* Slightly larger */
+        height: 45px;
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 2px solid white;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        border: 3px solid white; /* Thicker border to separate from image */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        font-size: 1.1rem;
     }
     .profile-pic-btn:hover {
-        background: #0056b3;
+        background: #e65c00;
         transform: scale(1.1);
     }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const editBtn = document.getElementById('edit-profile-btn');
-    const saveContainer = document.getElementById('save-btn-container');
-    const editableFields = ['fullName', 'phone', 'dateOfBirth', 'height', 'weight'];
-
-    // Edit Toggle Logic
-    editBtn.addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent default if it's in a form context
-        const isEditable = !document.getElementById('fullName').readOnly;
-        
-        if (isEditable) {
-            // Currently editable, switching to read-only (Cancel)
-            editableFields.forEach(id => document.getElementById(id).readOnly = true);
-            saveContainer.classList.add('d-none');
-            editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
-            editBtn.classList.remove('btn-outline-danger');
-            editBtn.classList.add('btn-outline-primary');
-            // Ideally, reload or reset form to clear unsaved changes
-            location.reload(); 
-        } else {
-            // Currently read-only, switching to editable
-            editableFields.forEach(id => document.getElementById(id).readOnly = false);
-            saveContainer.classList.remove('d-none');
-            editBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
-            editBtn.classList.remove('btn-outline-primary');
-            editBtn.classList.add('btn-outline-danger');
-        }
-    });
-
-    // Password Visibility Toggle
-    document.querySelectorAll('.toggle-password').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const input = btn.previousElementSibling;
-            const icon = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
-    });
-
-    // Profile Picture Auto-Upload
-    const profileInput = document.getElementById('profilePicture');
-    if(profileInput) {
-        profileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                // We need to submit the form, but we want to trigger ONLY the profile picture update.
-                // Since the main form handles both, we can simply submit the main form.
-                // However, to avoid validation errors on empty fields if any (though they are populated),
-                // we should ensure the backend handles the file upload check first (which it does).
-                document.getElementById('profile-form').submit();
-            }
-        });
-    }
-
-    // Toast Feedback
-    const feedbackMessage = <?php echo json_encode($feedbackMessage); ?>;
-    const feedbackType = "<?php echo $feedbackType; ?>";
-    if (feedbackMessage) {
-        const toastEl = document.createElement('div');
-        toastEl.className = `toast align-items-center text-white bg-${feedbackType === 'success' ? 'success' : 'danger'} border-0 position-fixed top-0 end-0 p-3 m-3`;
-        toastEl.style.zIndex = '1100';
-        toastEl.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">${feedbackMessage}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
-        document.body.appendChild(toastEl);
-        new bootstrap.Toast(toastEl).show();
-    }
-});
+    window.profileConfig = {
+        feedbackMessage: <?php echo json_encode($feedbackMessage); ?>,
+        feedbackType: "<?php echo $feedbackType; ?>"
+    };
 </script>
+<script src="../assets/js/client-profile.js"></script>
 
 <?php include 'includes/client_footer.php'; ?>

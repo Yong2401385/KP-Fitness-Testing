@@ -261,4 +261,59 @@ function format_currency($number) {
     return 'RM ' . number_format($number, 2);
 }
 
+/**
+ * Checks and rotates membership if expired.
+ * Handles Downgrade/Upgrade transitions.
+ */
+function check_membership_expiry() {
+    global $pdo;
+    if (!is_logged_in()) return;
+
+    $userId = $_SESSION['UserID'];
+    
+    // Fetch current status
+    $stmt = $pdo->prepare("SELECT MembershipID, MembershipEndDate, NextMembershipID, AutoRenew FROM users WHERE UserID = ?");
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if ($user && $user['MembershipEndDate'] && strtotime($user['MembershipEndDate']) < time()) {
+        // Membership has expired
+        
+        if ($user['NextMembershipID']) {
+            // Rotate to next membership (Downgrade/Scheduled Change)
+            $nextPlanId = $user['NextMembershipID'];
+            
+            // Get duration of next plan
+            $stmt = $pdo->prepare("SELECT Duration FROM membership WHERE MembershipID = ?");
+            $stmt->execute([$nextPlanId]);
+            $nextPlan = $stmt->fetch();
+            
+            if ($nextPlan) {
+                $newStartDate = date('Y-m-d');
+                $newEndDate = date('Y-m-d', strtotime("+{$nextPlan['Duration']} days"));
+                
+                // Determine AutoRenew for new plan (default to 1 for monthly/yearly)
+                $newAutoRenew = ($nextPlan['Duration'] >= 30) ? 1 : 0;
+
+                $stmt = $pdo->prepare("UPDATE users SET MembershipID = ?, MembershipStartDate = ?, MembershipEndDate = ?, NextMembershipID = NULL, AutoRenew = ? WHERE UserID = ?");
+                $stmt->execute([$nextPlanId, $newStartDate, $newEndDate, $newAutoRenew, $userId]);
+                
+                // Refresh session or notify user?
+                // Logic handles it silently, next page load sees new plan.
+            }
+        } elseif ($user['AutoRenew']) {
+            // Simple Auto-Renew (Same Plan)
+            // Ideally, this should trigger a payment. Since we don't have a real gateway background worker,
+            // we'll assume manual payment is needed OR just extend it if that's the "Simulated" behavior.
+            // For this specific request about "Downgrade", I will leave this alone to avoid over-engineering the auto-renew without payment.
+            // If expired and no next plan, they just lose access (as per standard logic).
+        }
+    }
+}
+
+// Run check if logged in
+if (is_logged_in()) {
+    check_membership_expiry();
+}
+
 ?>

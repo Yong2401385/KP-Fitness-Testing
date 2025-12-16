@@ -53,6 +53,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
         <li>
+            <?php 
+            $unreadCount = 0;
+            if (isset($_SESSION['UserID'])) {
+                $unreadCount = get_unread_notifications_count($_SESSION['UserID']); 
+            }
+            ?>
+            <a href="notifications.php" class="nav-link text-white <?= $current_page == 'notifications.php' ? 'active' : '' ?> d-flex justify-content-between align-items-center">
+                <div><i class="fas fa-bell me-2"></i> <span>Notifications</span></div>
+                <?php if ($unreadCount > 0): ?>
+                    <span class="badge bg-danger rounded-pill"><?php echo $unreadCount; ?></span>
+                <?php endif; ?>
+            </a>
+        </li>
+        <li>
             <a href="profile.php" class="nav-link text-white <?= $current_page == 'profile.php' ? 'active' : '' ?>">
                 <i class="fas fa-user-edit me-2"></i> <span>My Profile</span>
             </a>

@@ -44,6 +44,31 @@ try {
     $stmt->execute([$userId]);
     $membership = $stmt->fetch();
 
+    // Check if profile is incomplete
+    $profileIncomplete = (
+        empty($user['Phone']) || 
+        empty($user['DateOfBirth']) || 
+        empty($user['Height']) || 
+        empty($user['Weight']) ||
+        empty($user['Gender'])
+    );
+
+    $showCompleteProfileModal = false;
+
+    if ($profileIncomplete) {
+        // Show modal only if not dismissed in session
+        if (!isset($_SESSION['profile_prompt_dismissed'])) {
+            $showCompleteProfileModal = true;
+        }
+
+        // Ensure persistent notification exists
+        $stmt = $pdo->prepare("SELECT NotificationID FROM notifications WHERE UserID = ? AND Title = 'Action Required: Complete Profile' AND IsRead = 0");
+        $stmt->execute([$userId]);
+        if (!$stmt->fetch()) {
+            create_notification($userId, 'Action Required: Complete Profile', 'Please complete your profile details to access all features. Click here to setup now.', 'warning');
+        }
+    }
+
 } catch (PDOException $e) {
     $feedback = ['type' => 'danger', 'message' => 'Could not fetch dashboard data: ' . $e->getMessage()];
     $user = [];
@@ -52,6 +77,7 @@ try {
     $membership = null;
     $bmi = 'N/A';
     $bmiCategory = 'N/A';
+    $showCompleteProfileModal = false;
 }
 
 $motivationalQuotes = [
@@ -209,12 +235,16 @@ include 'includes/client_header.php';
             <div class="card-body d-flex flex-column justify-content-between">
                 <div class="display-4 fw-bold text-primary text-capitalize mb-2">
                     <?php 
-                    if (!empty($membership['PlanName']) && $membership['PlanName'] === 'Unlimited Class Membership') {
-                        echo 'Unlimited';
-                    } elseif (!empty($membership['PlanName']) && $membership['PlanName'] === 'Annual Class Membership') {
-                        echo 'Annual';
-                    } elseif (!empty($membership['PlanName'])) {
-                        echo htmlspecialchars($membership['PlanName']);
+                    if (!empty($membership['PlanName'])) {
+                        if ($membership['PlanName'] === 'Unlimited Class Membership') {
+                            echo 'Unlimited';
+                        } elseif ($membership['PlanName'] === 'Annual Class Membership') {
+                            echo 'Annual';
+                        } elseif ($membership['PlanName'] === '8 Class Membership') {
+                            echo '8 Class';
+                        } else {
+                            echo htmlspecialchars($membership['PlanName']); // Fallback, though ideally all known plans are covered
+                        }
                     } else {
                         echo '-';
                     }
@@ -293,6 +323,54 @@ include 'includes/client_header.php';
     </div>
 </div>
 
+<!-- Complete Profile Modal -->
+<div class="modal fade" id="completeProfileModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header text-white" style="background-color: #ff6b00;">
+                <h5 class="modal-title"><i class="fas fa-user-check me-2"></i> Complete Your Profile</h5>
+            </div>
+            <div class="modal-body">
+                <p>Welcome to KP Fitness! To provide you with the best personalized experience, please complete your profile details.</p>
+                <form id="completeProfileForm">
+                    <div class="mb-3">
+                        <label for="cp-phone" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control bg-white text-dark" id="cp-phone" name="phone" placeholder="e.g. 01X-XXX XXXX" required>
+                        <div class="invalid-feedback">Format: 01X-XXX XXXX or 01X-XXXX XXXX</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp-dob" class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control bg-white text-dark" id="cp-dob" name="dateOfBirth" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cp-height" class="form-label">Height (cm)</label>
+                            <input type="number" class="form-control bg-white text-dark" id="cp-height" name="height" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cp-weight" class="form-label">Weight (kg)</label>
+                            <input type="number" class="form-control bg-white text-dark" id="cp-weight" name="weight" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp-gender" class="form-label">Gender</label>
+                        <select class="form-select bg-white text-dark" id="cp-gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Save & Continue</button>
+                        <button type="button" class="btn btn-outline-secondary" id="dismiss-profile-btn" data-bs-dismiss="modal">Set Up Later</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Chatbot Bubble -->
 <div class="chatbot-bubble" id="chatbot-bubble">
     <i class="fas fa-comments"></i>
@@ -314,184 +392,12 @@ include 'includes/client_header.php';
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Update Stats Logic
-    const updateStatsModal = new bootstrap.Modal(document.getElementById('updateStatsModal'));
-    const updateStatsBtn = document.getElementById('update-stats-btn');
-    const updateStatsForm = document.getElementById('updateStatsForm');
-
-    updateStatsBtn.addEventListener('click', () => {
-        // Pre-fill values from the display logic
-        // We look for the text immediately following the strong tag in the list items
-        const listItems = document.querySelectorAll('#health-stats-list li.list-group-item');
-        
-        let currentHeight = '';
-        let currentWeight = '';
-
-        if (listItems.length >= 2) {
-            // Helper to clean text: " 175 cm" -> "175"
-            const extractValue = (node) => {
-                if (!node) return '';
-                // Get the text content, remove "Height:" or "Weight:" labels just in case, then trim
-                let text = node.textContent.replace(/(Height:|Weight:)/g, '').trim();
-                // Extract the first number found
-                const match = text.match(/(\d+(\.\d+)?)/);
-                return match ? match[0] : '';
-            };
-
-            currentHeight = extractValue(listItems[0]);
-            currentWeight = extractValue(listItems[1]);
-        }
-
-        document.getElementById('stats-height').value = currentHeight;
-        document.getElementById('stats-weight').value = currentWeight;
-        
-        updateStatsModal.show();
-    });
-
-    updateStatsForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        formData.append('csrf_token', '<?php echo get_csrf_token(); ?>');
-
-        fetch('../api/update_stats.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI
-                const listItems = document.querySelectorAll('#health-stats-list li.list-group-item');
-                const newHeight = formData.get('height');
-                const newWeight = formData.get('weight');
-                
-                listItems[0].innerHTML = `<strong>Height:</strong> ${newHeight} cm`;
-                listItems[1].innerHTML = `<strong>Weight:</strong> ${newWeight} kg`;
-                listItems[2].innerHTML = `<strong>BMI:</strong> ${data.bmi} (${data.bmiCategory})`;
-                
-                // Update the BMI card at the top too if it exists
-                // The BMI card is the 3rd card in the row of 4
-                const topCards = document.querySelectorAll('.row .col-md-3 .card-body .display-4');
-                if (topCards.length >= 3) {
-                    topCards[2].textContent = data.bmi;
-                    topCards[2].nextElementSibling.textContent = data.bmiCategory;
-                }
-
-                updateStatsModal.hide();
-                alert('Stats updated successfully!');
-                
-                // Optional: Reload page to refresh chart, or just leave it for now
-                // location.reload(); 
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred. Please try again.');
-        });
-    });
-
-    // BMI Chart
-    fetch('../api/get_weight_history.php')
-        .then(response => response.json())
-        .then(data => {
-            const labels = data.map(item => new Date(item.CreatedAt).toLocaleDateString());
-            const weights = data.map(item => item.Weight);
-            const height = <?php echo json_encode($user['Height'] ?? 0); ?>;
-            const bmiData = weights.map(weight => {
-                if (height > 0) {
-                    const heightInMeters = height / 100;
-                    return (weight / (heightInMeters * heightInMeters)).toFixed(1);
-                }
-                return 0;
-            });
-
-            const ctx = document.getElementById('bmiChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'BMI',
-                        data: bmiData,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        fill: true,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: false
-                        }
-                    }
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching weight history:', error);
-        });
-
-    // Chatbot functionality
-    const chatbotBubble = document.getElementById('chatbot-bubble');
-    const chatbotWindow = document.getElementById('chatbot-window');
-    const chatbotClose = document.getElementById('chatbot-close');
-    const chatbotMessages = document.getElementById('chatbot-messages');
-    const chatbotInput = document.getElementById('chatbot-input');
-    const chatbotSend = document.getElementById('chatbot-send');
-
-    chatbotBubble.addEventListener('click', () => {
-        chatbotWindow.classList.toggle('d-none');
-    });
-
-    chatbotClose.addEventListener('click', () => {
-        chatbotWindow.classList.add('d-none');
-    });
-
-    chatbotSend.addEventListener('click', sendMessage);
-    chatbotInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
-
-    function sendMessage() {
-        const userMessage = chatbotInput.value.trim();
-        if (userMessage === '') return;
-
-        appendMessage(userMessage, 'user');
-        chatbotInput.value = '';
-        
-        const formData = new FormData();
-        formData.append('message', userMessage);
-
-        fetch('../api/client_chatbot_handler.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            appendMessage(data.reply, 'bot');
-            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            appendMessage("Oops! Something went wrong. Please try again later.", 'bot');
-            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-        });
-    }
-
-    function appendMessage(text, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', sender);
-        messageDiv.textContent = text; // Use textContent to prevent XSS
-        chatbotMessages.appendChild(messageDiv);
-        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-    }
-});
+    window.dashboardConfig = {
+        csrfToken: '<?php echo get_csrf_token(); ?>',
+        userHeight: <?php echo json_encode($user['Height'] ?? 0); ?>,
+        showCompleteProfile: <?php echo $showCompleteProfileModal ? 'true' : 'false'; ?>
+    };
 </script>
+<script src="../assets/js/client-dashboard.js"></script>
 
 <?php include 'includes/client_footer.php'; ?>

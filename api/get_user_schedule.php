@@ -33,6 +33,7 @@ try {
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
+    error_log('Database error in get_user_schedule.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'An internal error occurred. Please try again later.']);
 }
 ?>

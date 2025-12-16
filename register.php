@@ -77,8 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['FullName'] = $fullName;
                 $_SESSION['Role'] = 'client';
                 
-                // Redirect to the profile setup page
-                redirect('client/profile.php');
+                // Redirect to the dashboard
+                redirect('client/dashboard.php');
             } else {
                 $errors[] = 'Failed to create account. Please try again.';
             }

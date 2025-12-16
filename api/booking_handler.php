@@ -34,6 +34,31 @@ try {
         
         $isPremiumMember = $user && in_array($user['PlanName'], ['Annual Class Membership', 'Unlimited Class Membership']);
         $isMember = $user && $user['MembershipID'] && $user['PlanName'] !== 'Non-Member';
+        
+        // Logic for 8 Class Membership Limit
+        if ($isMember && stripos($user['PlanName'], '8 Class') !== false) {
+            $stmt = $pdo->prepare("SELECT MembershipStartDate, MembershipEndDate FROM users WHERE UserID = ?");
+            $stmt->execute([$userId]);
+            $dates = $stmt->fetch();
+            
+            if ($dates) {
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) 
+                    FROM reservations r 
+                    JOIN sessions s ON r.SessionID = s.SessionID 
+                    WHERE r.UserID = ? 
+                    AND r.Status IN ('booked', 'attended', 'Done', 'Rated')
+                    AND s.SessionDate BETWEEN ? AND ?
+                ");
+                $stmt->execute([$userId, $dates['MembershipStartDate'], $dates['MembershipEndDate']]);
+                $used = $stmt->fetchColumn();
+                
+                if ($used >= 8) {
+                    $isMember = false; // Force payment
+                }
+            }
+        }
+
         $paymentConfirmed = isset($_POST['payment_confirmed']) && $_POST['payment_confirmed'] == 'true';
 
         if ($repeatWeekly && !$isPremiumMember) {
@@ -43,7 +68,7 @@ try {
         }
 
         // Get details of the session being booked
-        $stmt = $pdo->prepare("SELECT CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.Duration, a.Price, s.ClassID, s.Time FROM sessions s JOIN activities a ON s.ClassID = a.ClassID WHERE s.SessionID = ?");
+        $stmt = $pdo->prepare("SELECT CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.Duration, a.Price, s.ClassID, s.Time, a.ClassName FROM sessions s JOIN activities a ON s.ClassID = a.ClassID WHERE s.SessionID = ?");
         $stmt->execute([$sessionId]);
         $newSession = $stmt->fetch();
 
@@ -91,8 +116,9 @@ try {
 
             // Handle payment for non-members
             if (!$isMember && $paymentConfirmed) {
-                $stmt = $pdo->prepare("INSERT INTO payments (UserID, Amount, Status, MembershipID) VALUES (?, ?, 'completed', 4)");
-                $stmt->execute([$userId, $newSession['Price']]);
+                $description = "Class Booking: " . $newSession['ClassName'];
+                $stmt = $pdo->prepare("INSERT INTO payments (UserID, Amount, Status, MembershipID, PaymentType, Description) VALUES (?, ?, 'completed', 4, 'Booking', ?)");
+                $stmt->execute([$userId, $newSession['Price'], $description]);
             }
 
             // The actual booking logic, wrapped in a function to be reused for recurring bookings
@@ -127,10 +153,18 @@ try {
                 
                 $parentReservationId = createBooking($pdo, $userId, $sessionId, $repeatWeekly, $recurrenceId, null, $paidAmount);
                 $response['message'] = 'Class booked successfully!';
+                
+                // Notification for initial booking
+                $dateStr = format_date($newSessionStart->format('Y-m-d'));
+                $timeStr = format_time($newSession['Time']);
+                create_notification($userId, 'Class Booked', "You have successfully booked {$newSession['ClassName']} on {$dateStr} at {$timeStr}.", 'success');
 
                 if ($repeatWeekly) {
                     $response['message'] .= ' Weekly repeat booking for 2 weeks created.';
                     $originalSessionDate = new DateTime($newSessionStart->format('Y-m-d'));
+                    
+                    // Notification for recurrence
+                    create_notification($userId, 'Recurring Booking', "Recurring booking enabled for {$newSession['ClassName']} for the next 2 weeks.", 'success');
 
                     for ($i = 1; $i <= 2; $i++) {
                         $nextDate = (clone $originalSessionDate)->add(new DateInterval("P{$i}W"));
@@ -152,6 +186,10 @@ try {
                 $pdo->commit();
                 $response['success'] = true;
 
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                error_log('Database error in booking_handler.php (booking transaction): ' . $e->getMessage());
+                $response = ['success' => false, 'message' => 'An internal error occurred while processing your booking.'];
             } catch (Exception $e) {
                 $pdo->rollBack();
                 $response = ['success' => false, 'message' => $e->getMessage()];
@@ -164,39 +202,79 @@ try {
         $pdo->beginTransaction();
 
         // Get reservation details
-        $stmt = $pdo->prepare("SELECT SessionID, recurrence_id, is_recurring FROM reservations WHERE ReservationID = ? AND UserID = ? AND Status = 'booked'");
+        $stmt = $pdo->prepare("
+            SELECT r.ReservationID, r.SessionID, r.recurrence_id, r.is_recurring, r.PaidAmount, 
+                   CONCAT(s.SessionDate, ' ', s.Time) as SessionStart, a.ClassName
+            FROM reservations r
+            JOIN sessions s ON r.SessionID = s.SessionID
+            JOIN activities a ON s.ClassID = a.ClassID
+            WHERE r.ReservationID = ? AND r.UserID = ? AND r.Status = 'booked'
+        ");
         $stmt->execute([$reservationId, $userId]);
         $reservation = $stmt->fetch();
         
         if ($reservation) {
+            $reservationsToCancel = [];
             if ($reservation['is_recurring'] && $cancelScope === 'all') {
-                // Cancel all future bookings in the series
                 $stmt = $pdo->prepare(
-                    "SELECT r.ReservationID, r.SessionID 
+                    "SELECT r.ReservationID, r.SessionID, r.PaidAmount, CONCAT(s.SessionDate, ' ', s.Time) as SessionStart, a.ClassName
                      FROM reservations r
                      JOIN sessions s ON r.SessionID = s.SessionID
+                     JOIN activities a ON s.ClassID = a.ClassID
                      WHERE r.recurrence_id = ? AND r.UserID = ? AND r.Status = 'booked' AND CONCAT(s.SessionDate, ' ', s.Time) >= CURDATE()"
                 );
                 $stmt->execute([$reservation['recurrence_id'], $userId]);
                 $reservationsToCancel = $stmt->fetchAll();
-
-                foreach ($reservationsToCancel as $res) {
-                    $stmt = $pdo->prepare("UPDATE reservations SET Status = 'cancelled' WHERE ReservationID = ?");
-                    $stmt->execute([$res['ReservationID']]);
-                    $stmt = $pdo->prepare("UPDATE sessions SET CurrentBookings = GREATEST(0, CurrentBookings - 1) WHERE SessionID = ?");
-                    $stmt->execute([$res['SessionID']]);
-                }
-                $response = ['success' => true, 'message' => 'The recurring booking series has been cancelled.'];
-
             } else {
-                // Cancel a single booking
-                $stmt = $pdo->prepare("UPDATE reservations SET Status = 'cancelled' WHERE ReservationID = ?");
-                $stmt->execute([$reservationId]);
-                $stmt = $pdo->prepare("UPDATE sessions SET CurrentBookings = GREATEST(0, CurrentBookings - 1) WHERE SessionID = ?");
-                $stmt->execute([$reservation['SessionID']]);
-                $response = ['success' => true, 'message' => 'Your booking has been cancelled.'];
+                $reservationsToCancel[] = $reservation;
             }
+
+            $refundCount = 0;
+            $noRefundCount = 0;
+
+            foreach ($reservationsToCancel as $res) {
+                // Check for Refund Eligibility (48 hours)
+                $shouldRefund = false;
+                if ($res['PaidAmount'] > 0) {
+                    $sessionStart = new DateTime($res['SessionStart']);
+                    $now = new DateTime();
+                    $diff = $now->diff($sessionStart); // Interval
+                    
+                    // Convert to total hours
+                    $hours = ($diff->days * 24) + $diff->h;
+                    if ($diff->invert) $hours = 0; // Already passed
+
+                    if ($hours >= 48) {
+                        $shouldRefund = true;
+                        // Process Refund Record
+                        $desc = "Refund for " . $res['ClassName'];
+                        $stmt = $pdo->prepare("INSERT INTO payments (UserID, Amount, Status, MembershipID, PaymentType, Description) VALUES (?, ?, 'refunded', 4, 'Booking', ?)");
+                        $stmt->execute([$userId, $res['PaidAmount'], $desc]);
+                        $refundCount++;
+                    } else {
+                        $noRefundCount++;
+                    }
+                }
+
+                $stmt = $pdo->prepare("UPDATE reservations SET Status = 'cancelled' WHERE ReservationID = ?");
+                $stmt->execute([$res['ReservationID']]);
+                $stmt = $pdo->prepare("UPDATE sessions SET CurrentBookings = GREATEST(0, CurrentBookings - 1) WHERE SessionID = ?");
+                $stmt->execute([$res['SessionID']]);
+            }
+            
+            $msg = 'Booking cancelled.';
+            if ($refundCount > 0) {
+                $msg .= " Refund processed for $refundCount class(es).";
+            }
+            if ($noRefundCount > 0) {
+                $msg .= " No refund for $noRefundCount class(es) (less than 48h notice).";
+            }
+            
+            create_notification($userId, 'Booking Cancelled', $msg, 'info');
+            
             $pdo->commit();
+            $response = ['success' => true, 'message' => $msg];
+
         } else {
             $pdo->rollBack();
             $response = ['success' => false, 'message' => 'Could not find the booking to cancel.'];
@@ -248,7 +326,8 @@ try {
         $pdo->rollBack();
     }
     http_response_code(500);
-    $response = ['success' => false, 'message' => 'A database error occurred: ' . $e->getMessage()];
+    error_log('Database error in booking_handler.php: ' . $e->getMessage());
+    $response = ['success' => false, 'message' => 'An internal error occurred. Please try again later.'];
 }
 
 echo json_encode($response);
