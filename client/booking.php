@@ -97,13 +97,13 @@ include 'includes/client_header.php';
                                 <td><?php echo htmlspecialchars($booking['CategoryName']); ?> - <?php echo htmlspecialchars($booking['ActivityName']); ?></td>
                                 <td><span class="badge bg-<?php 
                                     $s = strtolower($booking['Status']);
-                                    if (in_array($s, ['booked', 'attended', 'done', 'rated'])) echo 'success';
+                                    if (in_array($s, ['booked', 'attended', 'rated'])) echo 'success';
                                     elseif (in_array($s, ['cancelled', 'absent'])) echo 'danger';
                                     elseif ($s === 're-scheduled') echo 'info';
                                     else echo 'secondary';
                                 ?>"><?php echo htmlspecialchars(ucfirst($booking['Status'])); ?></span></td>
                                 <td>
-                                    <?php if ($booking['Status'] === 'Attended' || $booking['Status'] === 'Done'): ?>
+                                    <?php if ($booking['Status'] === 'attended'): ?>
                                         <button class="btn btn-outline-primary btn-sm rate-btn" data-reservation-id="<?php echo $booking['ReservationID']; ?>">Rate</button>
                                     <?php elseif ($booking['Status'] === 'Absent'): ?>
                                         <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingModal">Re-schedule</button>

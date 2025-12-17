@@ -81,7 +81,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             <li class="nav-item">
-                <a href="../logout.php" class="nav-link text-white">
+                <a href="../logout.php" class="nav-link text-white" id="client-logout-btn">
                     <i class="fas fa-sign-out-alt me-2"></i> <span>Sign out</span>
                 </a>
             </li>

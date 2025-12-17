@@ -309,7 +309,7 @@ try {
              FROM reservations r
              JOIN sessions s ON r.SessionID = s.SessionID
              JOIN activities a ON s.ClassID = a.ClassID
-             WHERE r.ReservationID = ? AND r.UserID = ? AND r.Status = 'Done'"
+             WHERE r.ReservationID = ? AND r.UserID = ? AND r.Status = 'attended'"
         );
         $stmt->execute([$reservationId, $userId]);
         $reservation = $stmt->fetch();

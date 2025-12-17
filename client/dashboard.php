@@ -97,105 +97,6 @@ $quote = $motivationalQuotes[array_rand($motivationalQuotes)];
 include 'includes/client_header.php';
 ?>
 
-<style>
-    /* Original Orange Chatbot styles */
-    .chatbot-bubble {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background-color: #ff8c00; /* Orange */
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        cursor: pointer;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        transition: transform 0.2s ease-in-out;
-    }
-    .chatbot-bubble:hover {
-        transform: scale(1.05);
-    }
-    .chatbot-window {
-        position: fixed;
-        bottom: 90px;
-        right: 20px;
-        z-index: 1000;
-        width: 350px;
-        height: 450px;
-        background-color: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-    .chatbot-header {
-        background-color: #ff8c00; /* Orange */
-        color: white;
-        padding: 15px;
-        font-size: 1.1rem;
-        border-top-left-radius: 10px;
-        border-top-right-radius: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .chatbot-messages {
-        flex-grow: 1;
-        padding: 15px;
-        overflow-y: auto;
-        background-color: #f9f9f9;
-        display: flex;
-        flex-direction: column;
-    }
-    .chatbot-input-area {
-        padding: 10px 15px;
-        background-color: #f1f1f1;
-        display: flex;
-    }
-    .chatbot-input-area input {
-        flex-grow: 1;
-        border: 1px solid #ddd;
-        border-radius: 20px;
-        padding: 8px 15px;
-        margin-right: 10px;
-    }
-    .chatbot-input-area button {
-        background-color: #ff8c00; /* Orange */
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .message {
-        margin-bottom: 10px;
-        padding: 8px 12px;
-        border-radius: 8px;
-        max-width: 80%;
-    }
-    .message.user {
-        background-color: #ff8c00; /* Orange */
-        color: white;
-        align-self: flex-end;
-        margin-left: auto;
-    }
-    .message.bot {
-        background-color: #e2e2e2;
-        color: #333;
-        align-self: flex-start;
-        margin-right: auto;
-    }
-</style>
-
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Dashboard</h1>
 </div>
@@ -376,29 +277,11 @@ include 'includes/client_header.php';
     </div>
 </div>
 
-<!-- Chatbot Bubble -->
-<div class="chatbot-bubble" id="chatbot-bubble">
-    <i class="fas fa-comments"></i>
-</div>
-
-<!-- Chatbot Window -->
-<div class="chatbot-window d-none" id="chatbot-window">
-    <div class="chatbot-header">
-        <span>KP Fitness Bot</span>
-        <i class="fas fa-times" id="chatbot-close" style="cursor: pointer;"></i>
-    </div>
-    <div class="chatbot-messages" id="chatbot-messages">
-        <div class="message bot">Hello <?php echo htmlspecialchars(explode(' ', $user['FullName'])[0]); ?>! How can I help you today?</div>
-    </div>
-    <div class="chatbot-input-area">
-        <input type="text" id="chatbot-input" placeholder="Type your message...">
-        <button id="chatbot-send"><i class="fas fa-paper-plane"></i></button>
-    </div>
-</div>
+<!-- Chatbot code will be moved to client_footer.php -->
 
 <script>
     window.dashboardConfig = {
-        csrfToken: '<?php echo get_csrf_token(); ?>',
+        csrfToken: window.clientConfig.csrfToken, // Use global csrfToken
         userHeight: <?php echo json_encode($user['Height'] ?? 0); ?>,
         showCompleteProfile: <?php echo $showCompleteProfileModal ? 'true' : 'false'; ?>
     };

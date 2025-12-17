@@ -5,6 +5,15 @@ require_client();
 
 $userId = $_SESSION['UserID'];
 
+// --- Verify User Exists (Fix for Stale Sessions after DB Reset) ---
+$stmt = $pdo->prepare("SELECT UserID FROM users WHERE UserID = ?");
+$stmt->execute([$userId]);
+if (!$stmt->fetch()) {
+    // User in session does not exist in DB (stale session)
+    session_destroy();
+    redirect('../logout.php');
+}
+
 // --- Get user membership status ---
 $stmt = $pdo->prepare("
     SELECT m.PlanName 
@@ -314,9 +323,9 @@ include 'includes/client_header.php';
     </div>
 <?php endif; ?>
 
-<div class="row">
+<div class="row" style="min-height: 750px;">
     <!-- Generator Form -->
-    <div class="col-lg-4 mb-4">
+    <div class="col-lg-8 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <h5 class="mb-0">Create Your Plan</h5>
@@ -383,7 +392,7 @@ include 'includes/client_header.php';
     </div>
 
     <!-- Result -->
-    <div class="col-lg-8 mb-4">
+    <div class="col-lg-4 mb-4">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Generated Plan</h5>
@@ -479,6 +488,22 @@ include 'includes/client_header.php';
 </div>
 
 <style>
+.card-header h5 {
+    font-size: 1.5rem; /* Larger header title */
+}
+#generator-form .form-label {
+    font-size: 1.1rem; /* Larger labels */
+    margin-bottom: 0.5rem;
+}
+#generator-form .form-control,
+#generator-form .form-select {
+    font-size: 1.1rem; /* Larger input/select text */
+    padding: 0.75rem 1rem;
+    height: auto; /* Adjust height based on padding */
+}
+#generator-form .form-check-label {
+    font-size: 1.05rem; /* Larger checkbox labels */
+}
 .hover-card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }

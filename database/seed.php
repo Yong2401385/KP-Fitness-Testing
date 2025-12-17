@@ -34,7 +34,38 @@ $classesData = [
 $sessionTimes = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
 
 // --- Helper Functions ---
+function generateMalaysianPhoneNumber() {
+    // Pattern: /^01\d-\d{3,4} \d{4}$/
+    // Example: 012-345 6789 or 011-1234 5678
+    
+    $prefix = '01' . rand(0, 9);
+    
+    // Middle part can be 3 or 4 digits
+    $middleLength = rand(3, 4);
+    $middle = '';
+    for ($i = 0; $i < $middleLength; $i++) {
+        $middle .= rand(0, 9);
+    }
+    
+    // Last part is 4 digits
+    $last = '';
+    for ($i = 0; $i < 4; $i++) {
+        $last .= rand(0, 9);
+    }
+    
+    return "$prefix-$middle $last";
+}
+
 function truncateTables($pdo) {
+    echo "Checking schema...\n";
+    // Check and add DaysOff column if missing
+    try {
+        $pdo->query("SELECT DaysOff FROM users LIMIT 1");
+    } catch (PDOException $e) {
+        echo "Adding DaysOff column to users table...\n";
+        $pdo->exec("ALTER TABLE users ADD COLUMN DaysOff JSON DEFAULT NULL");
+    }
+
     echo "Truncating tables...\n";
     $tables = ['ratings', 'reservations', 'sessions', 'users', 'activities', 'class_categories', 'membership'];
     foreach ($tables as $table) {
@@ -55,13 +86,29 @@ function truncateTables($pdo) {
 
 function createTrainers($pdo, $trainersData) {
     echo "Creating trainers...\n";
-    $stmt = $pdo->prepare("INSERT INTO users (FullName, Email, Password, Role, Gender, Specialist, WorkingHours, JobType) VALUES (?, ?, ?, 'trainer', ?, ?, ?, ?)");
+    // Added Phone and DaysOff to INSERT
+    $stmt = $pdo->prepare("INSERT INTO users (FullName, Email, Password, Role, Phone, DaysOff, Gender, Specialist, WorkingHours, JobType) VALUES (?, ?, ?, 'trainer', ?, ?, ?, ?, ?, ?)");
     foreach ($trainersData as $trainer) {
         $password = password_hash('trainer123', PASSWORD_DEFAULT);
-        $stmt->execute([$trainer['FullName'], $trainer['Email'], $password, $trainer['Gender'], $trainer['Specialist'], $trainer['WorkingHours'], $trainer['JobType']]);
+        $phone = generateMalaysianPhoneNumber();
+        
+        // Generate Days Off (1 mandatory, 1 optional)
+        $daysOff = [];
+        $daysOff[] = rand(0, 6); // Mandatory day off
+        if (rand(0, 1)) {
+            do {
+                $secondDay = rand(0, 6);
+            } while ($secondDay === $daysOff[0]);
+            $daysOff[] = $secondDay;
+        }
+        sort($daysOff);
+        $daysOffJson = json_encode($daysOff);
+
+        $stmt->execute([$trainer['FullName'], $trainer['Email'], $password, $phone, $daysOffJson, $trainer['Gender'], $trainer['Specialist'], $trainer['WorkingHours'], $trainer['JobType']]);
     }
     echo count($trainersData) . " trainers created.\n";
-    return $pdo->query("SELECT Specialist, UserID FROM users WHERE Role = 'trainer'")->fetchAll(PDO::FETCH_GROUP | PDO::FETCH_COLUMN);
+    // Return trainers with their ID, Specialist AND DaysOff
+    return $pdo->query("SELECT Specialist, UserID, DaysOff FROM users WHERE Role = 'trainer'")->fetchAll(PDO::FETCH_GROUP | PDO::FETCH_ASSOC); // Changed fetch mode
 }
 
 function createMemberships($pdo) {
@@ -103,8 +150,18 @@ function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activ
     echo "Creating sessions for $year...\n";
     $stmt = $pdo->prepare("INSERT INTO sessions (SessionDate, StartTime, EndTime, Room, ClassID, TrainerID) VALUES (?, ?, ?, ?, ?, ?)");
     $durationStmt = $pdo->prepare("SELECT Duration FROM activities WHERE ClassID = ?");
+    
+    // Sessions will start from Jan 1 of the YEAR constant.
     $startDate = new DateTime("$year-01-01");
-    $endDate = new DateTime("$year-12-31");
+    
+    // Calculate end date to be 2 months from today, ensuring future coverage.
+    $today = new DateTime();
+    $futureEndDate = (clone $today)->add(new DateInterval('P2M'));
+    
+    // Use the greater of YEAR-12-31 or 2 months from today as the effective end date
+    $endOfYear = new DateTime("$year-12-31");
+    $endDate = ($futureEndDate > $endOfYear) ? $futureEndDate : $endOfYear;
+    
     $interval = new DateInterval('P1D');
     $daterange = new DatePeriod($startDate, $interval, $endDate);
 
@@ -112,6 +169,7 @@ function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activ
 
     foreach ($daterange as $date) {
         $currentDate = $date->format('Y-m-d');
+        $dayOfWeek = (int)$date->format('w'); // 0 (Sun) to 6 (Sat)
         $trainerSchedule[$currentDate] = [];
 
         foreach ($sessionTimes as $time) {
@@ -119,11 +177,30 @@ function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activ
                 if (!isset($trainersBySpecialty[$specialty])) continue;
 
                 $activityId = $activities[array_rand($activities)];
-                $availableTrainers = array_diff($trainersBySpecialty[$specialty], $trainerSchedule[$currentDate][$time] ?? []);
                 
-                if (empty($availableTrainers)) continue;
+                // Filter trainers: Must handle "Days Off" and "Not Already Booked"
+                $candidates = $trainersBySpecialty[$specialty];
+                $validTrainers = [];
                 
-                $trainerId = $availableTrainers[array_rand($availableTrainers)];
+                foreach ($candidates as $tData) {
+                    // Check Days Off
+                    $offDays = json_decode($tData['DaysOff'] ?? '[]');
+                    if (in_array($dayOfWeek, $offDays)) {
+                        continue;
+                    }
+                    
+                    // Check if already booked at this time
+                    $tId = $tData['UserID'];
+                    if (in_array($tId, $trainerSchedule[$currentDate][$time] ?? [])) {
+                        continue;
+                    }
+                    
+                    $validTrainers[] = $tId;
+                }
+                
+                if (empty($validTrainers)) continue;
+                
+                $trainerId = $validTrainers[array_rand($validTrainers)];
                 
                 // Get activity duration to calculate end time
                 $durationStmt->execute([$activityId]);
@@ -151,14 +228,21 @@ function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activ
 
 function createClients($pdo, $numClients) {
     echo "Creating $numClients clients...\n";
-    $stmt = $pdo->prepare("INSERT INTO users (FullName, Email, Password, Role, Phone, DateOfBirth, Height, Weight, MembershipID, MembershipStartDate, MembershipEndDate) VALUES (?, ?, ?, 'client', ?, ?, ?, ?, ?, ?, ?)");
+    // Added Gender to INSERT
+    $stmt = $pdo->prepare("INSERT INTO users (FullName, Email, Password, Role, Phone, Gender, DateOfBirth, Height, Weight, MembershipID, MembershipStartDate, MembershipEndDate) VALUES (?, ?, ?, 'client', ?, ?, ?, ?, ?, ?, ?, ?)");
     $membershipIds = $pdo->query("SELECT MembershipID, Duration FROM membership")->fetchAll(PDO::FETCH_KEY_PAIR);
     
     for ($i = 0; $i < $numClients; $i++) {
         $fullName = "Client " . ($i + 1);
         $email = "client" . ($i + 1) . "@example.com";
         $password = password_hash('client123', PASSWORD_DEFAULT);
-        $phone = '555-'.str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+        
+        // Use helper for phone
+        $phone = generateMalaysianPhoneNumber();
+        
+        // Generate Gender
+        $gender = rand(0, 1) ? 'Male' : 'Female';
+        
         $dob = rand(1970, 2005) . '-' . rand(1, 12) . '-' . rand(1, 28);
         $height = rand(150, 200);
         $weight = rand(50, 120);
@@ -169,15 +253,23 @@ function createClients($pdo, $numClients) {
         $endDate = null;
         if ($hasMembership) {
             $membershipId = array_rand($membershipIds);
-            $startDate = new DateTime(YEAR . "-01-01");
-            $startDate->add(new DateInterval('P' . rand(0, 364) . 'D'));
+            
+            // Generate a start date between Jan 1st and Today (Past actions only)
+            $startOfYear = new DateTime(YEAR . "-01-01");
+            $today = new DateTime();
+            $diff = $today->diff($startOfYear);
+            $daysInPast = $diff->days; // Days between Jan 1 and Today
+            
+            $startDate = clone $startOfYear;
+            $startDate->add(new DateInterval('P' . rand(0, $daysInPast) . 'D'));
+            
             $endDate = clone $startDate;
             $endDate->add(new DateInterval('P' . $membershipIds[$membershipId] . 'D'));
             $startDate = $startDate->format('Y-m-d');
             $endDate = $endDate->format('Y-m-d');
         }
 
-        $stmt->execute([$fullName, $email, $password, $phone, $dob, $height, $weight, $membershipId, $startDate, $endDate]);
+        $stmt->execute([$fullName, $email, $password, $phone, $gender, $dob, $height, $weight, $membershipId, $startDate, $endDate]);
     }
     echo "$numClients clients created.\n";
 }
@@ -186,7 +278,10 @@ function createClients($pdo, $numClients) {
 function createBookings($pdo, $numClients, $maxBookings) {
     echo "Creating bookings...\n";
     $clients = $pdo->query("SELECT UserID FROM users WHERE Role = 'client'")->fetchAll(PDO::FETCH_COLUMN);
-    $sessions = $pdo->query("SELECT SessionID, SessionDate FROM sessions")->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Only fetch PAST sessions for 'attended' history
+    $sessions = $pdo->query("SELECT SessionID, SessionDate FROM sessions WHERE SessionDate < CURRENT_DATE")->fetchAll(PDO::FETCH_ASSOC);
+    
     $stmt = $pdo->prepare("INSERT INTO reservations (UserID, SessionID, Status, BookingDate) VALUES (?, ?, ?, ?)");
     $updateSessionStmt = $pdo->prepare("UPDATE sessions SET CurrentBookings = CurrentBookings + 1 WHERE SessionID = ?");
 
@@ -209,6 +304,67 @@ function createBookings($pdo, $numClients, $maxBookings) {
     echo "Bookings created.\n";
 }
 
+function createPayments($pdo) {
+    echo "Creating payments...\n";
+    
+    // 1. Membership Payments
+    $clients = $pdo->query("SELECT UserID, MembershipID, MembershipStartDate FROM users WHERE Role = 'client' AND MembershipID IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+    $memberships = $pdo->query("SELECT MembershipID, Cost, PlanName FROM membership")->fetchAll(PDO::FETCH_UNIQUE);
+    
+    $paymentStmt = $pdo->prepare("INSERT INTO payments (PaymentDate, Amount, PaymentMethod, Status, UserID, MembershipID, PaymentType, Description) VALUES (?, ?, 'credit_card', 'completed', ?, ?, ?, ?)");
+    
+    $membershipPaymentCount = 0;
+    foreach ($clients as $client) {
+        $mid = $client['MembershipID'];
+        if (!isset($memberships[$mid])) continue;
+        
+        $cost = $memberships[$mid]['Cost'];
+        if ($cost > 0) {
+            $paymentDate = $client['MembershipStartDate'] . ' ' . rand(8, 20) . ':' . rand(10, 59) . ':00'; // Random time on start date
+            $description = "Membership Purchase: " . $memberships[$mid]['PlanName'];
+            $paymentStmt->execute([$paymentDate, $cost, $client['UserID'], $mid, 'Membership', $description]);
+            $membershipPaymentCount++;
+        }
+    }
+    echo "  - $membershipPaymentCount membership payments created.\n";
+
+    // 2. Booking Payments (For Non-Members)
+    // We assume Members with plans (Unlimited/Annual) don't pay per class, or it's included.
+    // We ONLY charge Non-Members (MembershipID = 4) for their bookings.
+    
+    // Fetch attended bookings for Non-Members
+    $sql = "
+        SELECT 
+            r.UserID, 
+            r.BookingDate, 
+            a.Price, 
+            a.ClassName 
+        FROM reservations r
+        JOIN sessions s ON r.SessionID = s.SessionID
+        JOIN activities a ON s.ClassID = a.ClassID
+        JOIN users u ON r.UserID = u.UserID
+        WHERE r.Status = 'attended' 
+        AND u.MembershipID = 4
+    ";
+    
+    $bookings = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    
+    $bookingPaymentCount = 0;
+    foreach ($bookings as $booking) {
+        $paymentDate = $booking['BookingDate']; // Payment happens at booking time
+        $amount = $booking['Price'];
+        $userId = $booking['UserID'];
+        $membershipId = 4; // Non-Member
+        $description = "Class Booking: " . $booking['ClassName'];
+        
+        $paymentStmt->execute([$paymentDate, $amount, $userId, $membershipId, 'Booking', $description]);
+        $bookingPaymentCount++;
+    }
+    echo "  - $bookingPaymentCount booking payments created (Non-Members).\n";
+    
+    echo "Payments created.\n";
+}
+
 // --- Main Execution ---
 
 try {
@@ -229,7 +385,7 @@ try {
 
     createBookings($pdo, NUM_CLIENTS, MAX_BOOKINGS_PER_CLIENT);
 
-
+    createPayments($pdo);
 
     echo "Dummy data generation completed successfully!\n";
 

@@ -98,6 +98,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_attendance']) &&
                 $stmt = $pdo->prepare("INSERT INTO attendance (SessionID, UserID, Status) VALUES (?, ?, ?)");
                 $stmt->execute([$sessionId, $userId, $status]);
             }
+
+            // Sync to reservations table
+            $resStatus = ($status === 'present') ? 'attended' : 'no_show';
+            $stmt = $pdo->prepare("UPDATE reservations SET Status = ? WHERE SessionID = ? AND UserID = ?");
+            $stmt->execute([$resStatus, $sessionId, $userId]);
         }
         
         // Mark session as completed
