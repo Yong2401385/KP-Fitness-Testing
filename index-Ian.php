@@ -252,6 +252,105 @@ require_once 'includes/config.php';
             font-size: 0.8rem;
             flex-shrink: 0;
         }
+    /* Chatbot Styles */
+    .chatbot-bubble {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #ff8c00; /* Orange */
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease-in-out;
+    }
+    .chatbot-bubble:hover {
+        transform: scale(1.05);
+    }
+    .chatbot-window {
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        z-index: 1000;
+        width: 350px;
+        height: 450px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .chatbot-header {
+        background-color: #ff8c00; /* Orange */
+        color: white;
+        padding: 15px;
+        font-size: 1.1rem;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chatbot-messages {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+        color: #333; /* Ensure text is visible on light bg */
+    }
+    .chatbot-input-area {
+        padding: 10px 15px;
+        background-color: #f1f1f1;
+        display: flex;
+    }
+    .chatbot-input-area input {
+        flex-grow: 1;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        padding: 8px 15px;
+        margin-right: 10px;
+        background: white;
+        color: #333;
+    }
+    .chatbot-input-area button {
+        background-color: #ff8c00; /* Orange */
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .message {
+        margin-bottom: 10px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        max-width: 80%;
+    }
+    .message.user {
+        background-color: #ff8c00; /* Orange */
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+    }
+    .message.bot {
+        background-color: #e2e2e2;
+        color: #333;
+        align-self: flex-start;
+        margin-right: auto;
+    }
     </style>
 </head>
 <body>
@@ -498,10 +597,30 @@ require_once 'includes/config.php';
     </div>
 </footer>
 
+<!-- Chatbot Bubble -->
+<div class="chatbot-bubble" id="chatbot-bubble">
+    <i class="fas fa-comments"></i>
+</div>
+
+<!-- Chatbot Window -->
+<div class="chatbot-window d-none" id="chatbot-window">
+    <div class="chatbot-header">
+        <span>KP Fitness Bot</span>
+        <i class="fas fa-times" id="chatbot-close" style="cursor: pointer;"></i>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages">
+        <div class="message bot">Hello! How can I help you today?</div>
+    </div>
+    <div class="chatbot-input-area">
+        <input type="text" id="chatbot-input" placeholder="Type your message...">
+        <button id="chatbot-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Scroll Animation -->
+<!-- Scroll Animation & Chatbot JS -->
 <script>
     const observer = new IntersectionObserver(entries => {
         entries.forEach(entry => {
@@ -513,6 +632,66 @@ require_once 'includes/config.php';
 
     document.querySelectorAll('.feature-card, .plan-card').forEach(el => {
         observer.observe(el);
+    });
+
+    // Chatbot Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const chatbotBubble = document.getElementById('chatbot-bubble');
+        const chatbotWindow = document.getElementById('chatbot-window');
+        const chatbotClose = document.getElementById('chatbot-close');
+        const chatbotMessages = document.getElementById('chatbot-messages');
+        const chatbotInput = document.getElementById('chatbot-input');
+        const chatbotSend = document.getElementById('chatbot-send');
+
+        chatbotBubble.addEventListener('click', () => {
+            chatbotWindow.classList.toggle('d-none');
+        });
+
+        chatbotClose.addEventListener('click', () => {
+            chatbotWindow.classList.add('d-none');
+        });
+
+        chatbotSend.addEventListener('click', sendMessage);
+        chatbotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const userMessage = chatbotInput.value.trim();
+            if (userMessage === '') return;
+
+            appendMessage(userMessage, 'user');
+            chatbotInput.value = '';
+            
+            // Send message to chatbot API
+            const formData = new FormData();
+            formData.append('message', userMessage);
+
+            fetch('api/chatbot_handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendMessage(data.reply, 'bot');
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                appendMessage("Oops! Something went wrong. Please try again later.", 'bot');
+                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            });
+        }
+
+        function appendMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', sender);
+            messageDiv.innerHTML = text; // Use innerHTML to allow for links
+            chatbotMessages.appendChild(messageDiv);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
     });
 </script>
 

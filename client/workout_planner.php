@@ -189,9 +189,9 @@ function generateWorkoutSession($sessionIndex, $goal, $fitnessLevel) {
 // Handle Generate Plan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_plan'])) {
     validate_csrf_token($_POST['csrf_token']);
-    $planName = sanitize_input($_POST['planName']);
-    $goal = sanitize_input($_POST['goal']);
-    $fitnessLevel = sanitize_input($_POST['fitnessLevel']);
+    $planName = sanitize_input($_POST['planName'] ?? '');
+    $goal = sanitize_input($_POST['goal'] ?? '');
+    $fitnessLevel = sanitize_input($_POST['fitnessLevel'] ?? '');
     $workoutDays = $_POST['workoutDays'] ?? [];
 
     if ($userTier !== 'premium') { 
