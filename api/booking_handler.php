@@ -67,8 +67,8 @@ try {
             exit;
         }
 
-        // Get details of the session being booked
-        $stmt = $pdo->prepare("SELECT CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.Duration, a.Price, s.ClassID, s.Time, s.TrainerID, a.ClassName FROM sessions s JOIN activities a ON s.ClassID = a.ClassID WHERE s.SessionID = ?");
+    // Get session details
+    $stmt = $pdo->prepare("SELECT CONCAT(s.SessionDate, ' ', s.StartTime) as StartTime, a.Duration, a.Price, s.ClassID, s.StartTime, s.TrainerID, a.ClassName FROM sessions s JOIN activities a ON s.ClassID = a.ClassID WHERE s.SessionID = ?");
         $stmt->execute([$sessionId]);
         $newSession = $stmt->fetch();
 
@@ -83,7 +83,7 @@ try {
         
         // Time collision check
         $stmt = $pdo->prepare("
-            SELECT CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.Duration 
+            SELECT CONCAT(s.SessionDate, ' ', s.StartTime) as StartTime, a.Duration 
             FROM reservations r
             JOIN sessions s ON r.SessionID = s.SessionID
             JOIN activities a ON s.ClassID = a.ClassID
@@ -156,7 +156,7 @@ try {
                 
                 // Notification for initial booking
                 $dateStr = format_date($newSessionStart->format('Y-m-d'));
-                $timeStr = format_time($newSession['Time']);
+                $timeStr = format_time($newSession['StartTime']);
                 create_notification($userId, 'Class Booked', "You have successfully booked {$newSession['ClassName']} on {$dateStr} at {$timeStr}.", 'success');
 
                 // Notify Trainer
@@ -175,13 +175,14 @@ try {
                     for ($i = 1; $i <= 2; $i++) {
                         $nextDate = (clone $originalSessionDate)->add(new DateInterval("P{$i}W"));
                         
-                        $stmt = $pdo->prepare("SELECT SessionID FROM sessions WHERE ClassID = ? AND SessionDate = ? AND Time = ? AND Status = 'scheduled'");
-                        $stmt->execute([$newSession['ClassID'], $nextDate->format('Y-m-d'), $newSession['Time']]);
-                        $nextSession = $stmt->fetch();
+            // Duplicate check for this specific date
+            $stmt = $pdo->prepare("SELECT SessionID FROM sessions WHERE ClassID = ? AND SessionDate = ? AND StartTime = ? AND Status = 'scheduled'");
+            $stmt->execute([$newSession['ClassID'], $nextDate->format('Y-m-d'), $newSession['StartTime']]);
+            $recurringSession = $stmt->fetch();
 
-                        if ($nextSession) {
+                        if ($recurringSession) {
                             try {
-                                createBooking($pdo, $userId, $nextSession['SessionID'], true, $recurrenceId, $parentReservationId, $paidAmount);
+                                createBooking($pdo, $userId, $recurringSession['SessionID'], true, $recurrenceId, $parentReservationId, $paidAmount);
                             } catch (Exception $e) {
                                 // Ignore if a single recurring booking fails (e.g., full), but don't stop the whole process.
                             }
@@ -207,28 +208,23 @@ try {
 
         $pdo->beginTransaction();
 
-        // Get reservation details
-        $stmt = $pdo->prepare("
-            SELECT r.ReservationID, r.SessionID, r.recurrence_id, r.is_recurring, r.PaidAmount, 
-                   CONCAT(s.SessionDate, ' ', s.Time) as SessionStart, a.ClassName, s.TrainerID
-            FROM reservations r
-            JOIN sessions s ON r.SessionID = s.SessionID
-            JOIN activities a ON s.ClassID = a.ClassID
-            WHERE r.ReservationID = ? AND r.UserID = ? AND r.Status = 'booked'
-        ");
+    // Get reservation details
+    $stmt = $pdo->prepare("SELECT r.ReservationID, r.SessionID, r.PaidAmount, CONCAT(s.SessionDate, ' ', s.StartTime) as SessionStart, a.ClassName, s.TrainerID 
+                           FROM reservations r 
+                           JOIN sessions s ON r.SessionID = s.SessionID 
+                           JOIN activities a ON s.ClassID = a.ClassID 
+                           WHERE r.ReservationID = ? AND r.UserID = ?");
         $stmt->execute([$reservationId, $userId]);
         $reservation = $stmt->fetch();
         
         if ($reservation) {
             $reservationsToCancel = [];
             if ($reservation['is_recurring'] && $cancelScope === 'all') {
-                $stmt = $pdo->prepare(
-                    "SELECT r.ReservationID, r.SessionID, r.PaidAmount, CONCAT(s.SessionDate, ' ', s.Time) as SessionStart, a.ClassName, s.TrainerID
-                     FROM reservations r
-                     JOIN sessions s ON r.SessionID = s.SessionID
-                     JOIN activities a ON s.ClassID = a.ClassID
-                     WHERE r.recurrence_id = ? AND r.UserID = ? AND r.Status = 'booked' AND CONCAT(s.SessionDate, ' ', s.Time) >= CURDATE()"
-                );
+                        $stmt = $pdo->prepare("SELECT r.ReservationID, r.SessionID, r.PaidAmount, CONCAT(s.SessionDate, ' ', s.StartTime) as SessionStart, a.ClassName, s.TrainerID 
+                                               FROM reservations r 
+                                               JOIN sessions s ON r.SessionID = s.SessionID 
+                                               JOIN activities a ON s.ClassID = a.ClassID 
+                                               WHERE r.recurrence_id = ? AND r.UserID = ? AND r.Status = 'booked' AND CONCAT(s.SessionDate, ' ', s.StartTime) >= CURDATE()");
                 $stmt->execute([$reservation['recurrence_id'], $userId]);
                 $reservationsToCancel = $stmt->fetchAll();
             } else {

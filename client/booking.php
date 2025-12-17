@@ -22,7 +22,7 @@ $allCategories = $stmt->fetchAll();
 
 // Fetch booking history
 $stmt = $pdo->prepare("
-    SELECT r.ReservationID, r.is_recurring, CONCAT(s.SessionDate, ' ', s.Time) as StartTime, a.ClassName as ActivityName, c.CategoryName, r.Status
+    SELECT r.ReservationID, r.is_recurring, CONCAT(s.SessionDate, ' ', s.StartTime) as StartTime, a.ClassName as ActivityName, c.CategoryName, r.Status
     FROM reservations r
     JOIN sessions s ON r.SessionID = s.SessionID
     JOIN activities a ON s.ClassID = a.ClassID

@@ -169,12 +169,13 @@ CREATE TABLE `reservations` (
 CREATE TABLE `sessions` (
   `SessionID` int(11) NOT NULL,
   `SessionDate` date NOT NULL,
-  `Time` time NOT NULL,
+  `StartTime` time NOT NULL,
+  `EndTime` time DEFAULT NULL,
   `Room` varchar(50) DEFAULT NULL,
   `ClassID` int(11) NOT NULL,
   `TrainerID` int(11) NOT NULL,
   `CurrentBookings` int(11) DEFAULT 0,
-  `Status` enum('scheduled','cancelled','completed') DEFAULT 'scheduled',
+  `Status` enum('scheduled','ongoing','cancelled','completed') DEFAULT 'scheduled',
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -202,6 +203,8 @@ CREATE TABLE `users` (
   `MembershipID` int(11) DEFAULT NULL,
   `MembershipStartDate` date DEFAULT NULL,
   `MembershipEndDate` date DEFAULT NULL,
+  `NextMembershipID` int(11) DEFAULT NULL,
+  `AutoRenew` tinyint(1) DEFAULT 0,
   `TrainerID` int(11) DEFAULT NULL,
   `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
   `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -315,6 +318,7 @@ ALTER TABLE `users`
   ADD PRIMARY KEY (`UserID`),
   ADD UNIQUE KEY `Email` (`Email`),
   ADD KEY `MembershipID` (`MembershipID`),
+  ADD KEY `NextMembershipID` (`NextMembershipID`),
   ADD KEY `TrainerID` (`TrainerID`);
 
 --
@@ -451,7 +455,8 @@ ALTER TABLE `sessions`
 --
 ALTER TABLE `users`
   ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`MembershipID`) REFERENCES `membership` (`MembershipID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `users_ibfk_2` FOREIGN KEY (`TrainerID`) REFERENCES `users` (`UserID`) ON DELETE SET NULL;
+  ADD CONSTRAINT `users_ibfk_2` FOREIGN KEY (`TrainerID`) REFERENCES `users` (`UserID`) ON DELETE SET NULL,
+  ADD CONSTRAINT `users_ibfk_3` FOREIGN KEY (`NextMembershipID`) REFERENCES `membership` (`MembershipID`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `workout_plans`

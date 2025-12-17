@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         end.setDate(end.getDate() + 6);
 
         const options = { month: 'short', day: 'numeric' };
-        document.getElementById('current-week-display').textContent = `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+        document.getElementById('current-week-display').textContent = `${start.toLocaleDateString('en-GB', options)} - ${end.toLocaleDateString('en-GB', options)}`;
         
         fetchSchedule(formatDate(start), formatDate(end));
     }
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 container.innerHTML = '';
                 if (data.length === 0) {
-                    container.innerHTML = '<div class="text-center text-muted py-4">No classes scheduled for this week.</div>';
+                    container.innerHTML = '<div class="text-center text-muted py-4">No bookings found, Book a Class now!</div>';
                     return;
                 }
 
@@ -55,10 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Render
                 Object.keys(grouped).forEach(date => {
                     const dateObj = new Date(date);
-                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
                     const dayHeader = document.createElement('div');
                     dayHeader.className = 'list-group-item list-group-item-secondary fw-bold';
-                    dayHeader.textContent = `${dayName}, ${dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                    dayHeader.textContent = `${dayName}, ${dateObj.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}`;
                     container.appendChild(dayHeader);
 
                     grouped[date].forEach(session => {
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const safeDesc = (session.Description || 'No description').replace(/"/g, '&quot;');
                         
                         // Format time to HH:MM
-                        const timeStr = session.Time.substring(0, 5);
+                        const timeStr = session.StartTime.substring(0, 5);
                         
                         item.innerHTML = `
                             <div class="row align-items-center text-center text-md-start">
@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let calendar = new VanillaCalendar('#calendar-container', {
         settings: { 
+            lang: 'en-GB',
             selection: { day: 'single' }, 
             visibility: { theme: 'light' } 
         },

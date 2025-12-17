@@ -29,9 +29,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 throw new Exception("New date and time are required for rescheduling.");
             }
 
-            // Update session
-            $stmt = $pdo->prepare("UPDATE sessions SET SessionDate = ?, Time = ?, Status = 'scheduled' WHERE SessionID = ?");
-            $stmt->execute([$newDate, $newTime, $sessionId]);
+            // Update session with new StartTime and calculated EndTime
+            // First, get duration to calculate EndTime
+            $stmtDuration = $pdo->prepare("SELECT a.Duration FROM sessions s JOIN activities a ON s.ClassID = a.ClassID WHERE s.SessionID = ?");
+            $stmtDuration->execute([$sessionId]);
+            $duration = $stmtDuration->fetchColumn();
+            $duration = $duration ? $duration : 60; // Default 60 if fail
+            
+            // Calculate EndTime
+            $startDateTime = new DateTime("$newDate $newTime");
+            $endDateTime = clone $startDateTime;
+            $endDateTime->add(new DateInterval('PT' . $duration . 'M'));
+            $newEndTime = $endDateTime->format('H:i:s');
+
+            $stmt = $pdo->prepare("UPDATE sessions SET SessionDate = ?, StartTime = ?, EndTime = ?, Status = 'scheduled' WHERE SessionID = ?");
+            $stmt->execute([$newDate, $newTime, $newEndTime, $sessionId]);
             
             // Notify clients (Placeholder)
             // $clients = get_booked_clients($sessionId);
@@ -45,14 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             // --- Handle Client Cancellations & Refunds ---
             // Fetch all booked reservations for this session
-            $stmt = $pdo->prepare("
-                SELECT r.ReservationID, r.UserID, r.PaidAmount, a.ClassName, s.SessionDate, s.Time
-                FROM reservations r
-                JOIN sessions s ON r.SessionID = s.SessionID
-                JOIN activities a ON s.ClassID = a.ClassID
-                WHERE r.SessionID = ? AND r.Status = 'booked'
-            ");
-            $stmt->execute([$sessionId]);
+                $stmt = $pdo->prepare("
+                    SELECT r.ReservationID, r.UserID, r.PaidAmount, a.ClassName, s.SessionDate, s.StartTime
+                    FROM reservations r
+                    JOIN sessions s ON r.SessionID = s.SessionID
+                    JOIN activities a ON s.ClassID = a.ClassID
+                    WHERE r.SessionID = ? AND r.Status = 'booked'
+                ");            $stmt->execute([$sessionId]);
             $bookedClients = $stmt->fetchAll();
             
             foreach ($bookedClients as $booking) {
@@ -68,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 
                 // 3. Notify Client
-                $sessionTimeStr = format_date($booking['SessionDate']) . ' at ' . format_time($booking['Time']);
+                $sessionTimeStr = format_date($booking['SessionDate']) . ' at ' . format_time($booking['StartTime']);
                 $msg = "Important: The {$booking['ClassName']} session scheduled for $sessionTimeStr has been cancelled by the trainer.";
                 if ($booking['PaidAmount'] > 0) {
                     $msg .= " A refund of RM " . number_format($booking['PaidAmount'], 2) . " has been processed.";
@@ -114,13 +125,21 @@ try {
     $startDate = "$year-$month-01";
     $endDate = "$year-$month-$daysInMonth";
     
-    $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.SessionDate, s.Time, s.Room, s.Status, s.CurrentBookings, c.ClassName, c.MaxCapacity
-        FROM sessions s
-        JOIN activities c ON s.ClassID = c.ClassID
-        WHERE s.TrainerID = ? AND s.SessionDate BETWEEN ? AND ?
-        ORDER BY s.Time ASC
-    ");
+        $stmt = $pdo->prepare("
+    
+            SELECT s.SessionID, s.SessionDate, s.StartTime, s.Room, s.Status, s.CurrentBookings, c.ClassName, c.MaxCapacity
+    
+            FROM sessions s
+    
+            JOIN activities c ON s.ClassID = c.ClassID
+    
+            WHERE s.TrainerID = ? 
+    
+            AND s.SessionDate BETWEEN ? AND ?
+    
+            ORDER BY s.StartTime ASC
+    
+        ");
     $stmt->execute([$trainerId, $startDate, $endDate]);
     $monthSessions = $stmt->fetchAll(PDO::FETCH_ASSOC); 
     
@@ -292,7 +311,7 @@ include 'includes/trainer_header.php';
             if ($sessionCount > 0) {
                 echo "<div id='data-$dateString' style='display:none;'>";
                 foreach ($daySessions as $session) {
-                    $live = is_session_live($session['SessionDate'], $session['Time']);
+                    $live = is_session_live($session['SessionDate'], $session['StartTime']);
                     echo "<div class='card mb-3 bg-dark border-secondary shadow-lg'>"; // Added shadow
                     echo "<div class='card-body p-4'>"; // Increased padding
                     echo "<div class='d-flex justify-content-between align-items-start mb-3'>";
@@ -300,7 +319,7 @@ include 'includes/trainer_header.php';
                     if ($live) echo "<span class='badge bg-success py-2 px-3' style='font-size: 0.9rem;'>LIVE</span>"; // Larger badge
                     echo "</div>";
                     echo "<p class='card-text text-white mb-3' style='font-size: 1.1rem;'>"; // Larger, white text
-                    echo "<i class='far fa-clock me-2'></i> " . format_time($session['Time']) . "<br>";
+                    echo "<i class='far fa-clock me-2'></i> " . format_time($session['StartTime']) . "<br>";
                     echo "<i class='fas fa-door-open me-2'></i> " . htmlspecialchars($session['Room']) . "<br>";
                     echo "<i class='fas fa-users me-2'></i> " . $session['CurrentBookings'] . " / " . $session['MaxCapacity'];
                     echo "</p>";

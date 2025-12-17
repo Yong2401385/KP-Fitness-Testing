@@ -9,6 +9,11 @@ try {
     $stmt = $pdo->prepare("SELECT * FROM users WHERE UserID = ?");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
+
+    if (!$user) {
+        // User not found (e.g., deleted), force logout
+        redirect('../logout.php');
+    }
     
     // Calculate BMI
     $bmi = calculate_bmi($user['Height'], $user['Weight']);
@@ -16,12 +21,12 @@ try {
     
     // Get upcoming bookings (next 5)
     $stmt = $pdo->prepare(query: "
-        SELECT s.SessionDate, s.Time, a.ClassName 
+        SELECT s.SessionDate, s.StartTime, a.ClassName 
         FROM reservations r
         JOIN sessions s ON r.SessionID = s.SessionID
         JOIN activities a ON s.ClassID = a.ClassID
         WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE()
-        ORDER BY s.SessionDate, s.Time
+        ORDER BY s.SessionDate, s.StartTime
         LIMIT 5
     ");
     $stmt->execute([$userId]);
@@ -270,7 +275,7 @@ include 'includes/client_header.php';
                         <?php foreach ($upcomingBookings as $booking): ?>
                             <li class="list-group-item">
                                 <strong><?php echo htmlspecialchars($booking['ClassName']); ?></strong><br>
-                                <small><?php echo htmlspecialchars(format_date($booking['SessionDate'])); ?> at <?php echo htmlspecialchars(format_time($booking['Time'])); ?></small>
+                                <small><?php echo htmlspecialchars(format_date($booking['SessionDate'])); ?> at <?php echo htmlspecialchars(format_time($booking['StartTime'])); ?></small>
                             </li>
                         <?php endforeach; ?>
                     <?php endif; ?>

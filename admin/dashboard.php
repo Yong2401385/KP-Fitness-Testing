@@ -151,6 +151,15 @@ include 'includes/admin_header.php';
             </div>
         </div>
     </div>
+    <div class="col-md-3 mb-3">
+        <div class="card quick-action-card h-100 position-relative">
+            <div class="card-body">
+                <i class="fas fa-chart-area fs-1 mb-2"></i>
+                <h5 class="card-title">Real-Time Activity</h5>
+                <a href="realtime_activity.php" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
 </div>
 
 

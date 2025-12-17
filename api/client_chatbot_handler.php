@@ -64,9 +64,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 1. Fetch context from the database
     try {
-        // Get next booking
-        $stmt_booking = $pdo->prepare("SELECT s.SessionDate, s.Time, a.ClassName FROM reservations r JOIN sessions s ON r.SessionID = s.SessionID JOIN activities a ON s.ClassID = a.ClassID WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE() ORDER BY s.SessionDate, s.Time LIMIT 1");
-        $stmt_booking->execute([$userId]);
+    // Check for upcoming bookings
+    $stmt_booking = $pdo->prepare("SELECT s.SessionDate, s.StartTime, a.ClassName FROM reservations r JOIN sessions s ON r.SessionID = s.SessionID JOIN activities a ON s.ClassID = a.ClassID WHERE r.UserID = ? AND r.Status = 'booked' AND s.SessionDate >= CURDATE() ORDER BY s.SessionDate, s.StartTime LIMIT 1");
+    $stmt_booking->execute([$userId]);
         $nextBooking = $stmt_booking->fetch();
         
         // Get membership

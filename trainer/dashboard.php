@@ -8,24 +8,24 @@ $feedback = [];
 
 // --- Fetch Data for Display ---
 try {
-    // Today's schedule
-    $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.Time, c.ClassName, s.Room, s.CurrentBookings, c.MaxCapacity
-        FROM sessions s
-        JOIN activities c ON s.ClassID = c.ClassID
-        WHERE s.TrainerID = ? AND s.SessionDate = CURDATE() AND s.Status = 'scheduled'
-        ORDER BY s.Time
-    ");
+// Get today's schedule
+$stmt = $pdo->prepare("
+    SELECT s.SessionDate, s.StartTime, c.ClassName 
+    FROM sessions s
+    JOIN activities c ON s.ClassID = c.ClassID
+    WHERE s.TrainerID = ? AND s.SessionDate = CURDATE() AND s.Status != 'cancelled'
+    ORDER BY s.SessionDate, s.StartTime
+");
     $stmt->execute([$trainerId]);
     $todaysSchedule = $stmt->fetchAll();
     
     // Upcoming classes (next 5)
     $stmt = $pdo->prepare("
-        SELECT s.SessionDate, s.Time, c.ClassName
+        SELECT s.SessionDate, s.StartTime, c.ClassName
         FROM sessions s
         JOIN activities c ON s.ClassID = c.ClassID
         WHERE s.TrainerID = ? AND s.SessionDate > CURDATE() AND s.Status = 'scheduled'
-        ORDER BY s.SessionDate, s.Time
+        ORDER BY s.SessionDate, s.StartTime
         LIMIT 5
     ");
     $stmt->execute([$trainerId]);
@@ -304,7 +304,7 @@ include 'includes/trainer_header.php';
                             <?php else: ?>
                                 <?php foreach($todaysSchedule as $session): ?>
                                 <tr>
-                                    <td class="ps-4 py-3"><strong><?php echo format_time($session['Time']); ?></strong></td>
+                                    <td class="ps-4 py-3"><strong><?php echo format_time($session['StartTime']); ?></strong></td>
                                     <td class="py-3"><?php echo htmlspecialchars($session['ClassName']); ?></td>
                                     <td class="py-3"><?php echo htmlspecialchars($session['Room']); ?></td>
                                     <td class="py-3">
@@ -344,7 +344,7 @@ include 'includes/trainer_header.php';
                             <?php else: ?>
                                 <?php foreach($upcomingClasses as $class_item): ?>
                                 <tr>
-                                    <td class="ps-4 py-3"><?php echo format_date($class_item['SessionDate']) . ' at ' . format_time($class_item['Time']); ?></td>
+                                    <td class="ps-4 py-3"><?php echo format_date($class_item['SessionDate']) . ' at ' . format_time($class_item['StartTime']); ?></td>
                                     <td class="text-end pe-4 py-3"><?php echo htmlspecialchars($class_item['ClassName']); ?></td>
                                 </tr>
                                 <?php endforeach; ?>

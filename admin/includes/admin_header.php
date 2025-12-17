@@ -54,6 +54,18 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-chart-line me-2"></i> <span>Reports</span>
             </a>
         </li>
+        <li>
+            <a href="realtime_activity.php" class="nav-link text-white <?= $current_page == 'realtime_activity.php' ? 'active' : '' ?>">
+                <i class="fas fa-chart-area me-2"></i> <span>Real-Time Activity</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link text-white" id="sidebarNotifBtn">
+                <i class="fas fa-bell me-2"></i> 
+                <span>Notifications</span>
+                <span class="badge bg-danger ms-2 d-none" id="sidebarNotifBadge">0</span>
+            </a>
+        </li>
     </ul>
     <hr>
     <div class="sidebar-footer">
@@ -80,7 +92,3 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <main class="flex-grow-1 p-3 main-content">
     <!-- Page content will be injected here -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="../assets/js/main.js"></script>
-</body>
-</html>

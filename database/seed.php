@@ -101,7 +101,8 @@ function createActivities($pdo, $classesData) {
 
 function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activitiesBySpecialty) {
     echo "Creating sessions for $year...\n";
-    $stmt = $pdo->prepare("INSERT INTO sessions (SessionDate, Time, Room, ClassID, TrainerID) VALUES (?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO sessions (SessionDate, StartTime, EndTime, Room, ClassID, TrainerID) VALUES (?, ?, ?, ?, ?, ?)");
+    $durationStmt = $pdo->prepare("SELECT Duration FROM activities WHERE ClassID = ?");
     $startDate = new DateTime("$year-01-01");
     $endDate = new DateTime("$year-12-31");
     $interval = new DateInterval('P1D');
@@ -124,8 +125,19 @@ function createSessions($pdo, $year, $sessionTimes, $trainersBySpecialty, $activ
                 
                 $trainerId = $availableTrainers[array_rand($availableTrainers)];
                 
+                // Get activity duration to calculate end time
+                $durationStmt->execute([$activityId]);
+                $activity = $durationStmt->fetch();
+                $durationMinutes = $activity['Duration'];
+                
+                // Calculate end time
+                $startTimeObj = new DateTime($time);
+                $endTimeObj = clone $startTimeObj;
+                $endTimeObj->add(new DateInterval('PT' . $durationMinutes . 'M'));
+                $endTime = $endTimeObj->format('H:i:s');
+                
                 $room = "Room " . rand(1, 5);
-                $stmt->execute([$currentDate, $time, $room, $activityId, $trainerId]);
+                $stmt->execute([$currentDate, $time, $endTime, $room, $activityId, $trainerId]);
 
                 if (!isset($trainerSchedule[$currentDate][$time])) {
                     $trainerSchedule[$currentDate][$time] = [];

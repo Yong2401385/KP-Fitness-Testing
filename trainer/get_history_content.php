@@ -8,13 +8,13 @@ $limitDate = date('Y-m-d', strtotime('-1 month'));
 try {
     // 1. Fetch Sessions (Same logic as before)
     $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.SessionDate, s.Time, c.ClassName, s.Status
+        SELECT s.SessionID, s.SessionDate, s.StartTime, c.ClassName, s.Status
         FROM sessions s
         JOIN activities c ON s.ClassID = c.ClassID
         WHERE s.TrainerID = ? 
         AND s.SessionDate < CURDATE()
         AND s.SessionDate >= ?
-        ORDER BY s.SessionDate DESC, s.Time ASC
+        ORDER BY s.SessionDate DESC, s.StartTime ASC
     ");
     $stmt->execute([$trainerId, $limitDate]);
     $pastSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -70,7 +70,7 @@ if (empty($groupedSessions)): ?>
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div>
                                             <strong class="text-primary" style="font-size: 1rem;"><?php echo htmlspecialchars($session['ClassName']); ?></strong>
-                                            <div class="small text-muted"><?php echo format_time($session['Time']); ?></div>
+                                            <div class="small text-muted"><?php echo format_time($session['StartTime']); ?></div>
                                         </div>
                                         <span class="badge bg-<?php echo $session['Status'] === 'completed' ? 'success' : 'info'; ?>" style="font-size: 0.75rem;"> <!-- Changed secondary to info for better contrast -->
                                             <?php echo ucfirst($session['Status']); ?>

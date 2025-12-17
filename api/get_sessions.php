@@ -14,26 +14,23 @@ $categoryId = $_GET['category_id'] ?? null;
 $difficulty = $_GET['difficulty'] ?? null;
 
 try {
-    $sql = "
-        SELECT s.SessionID, s.SessionDate, s.Time, a.ClassName as ActivityName, a.MaxCapacity, u.FullName as TrainerName, s.CurrentBookings
+$sql = "SELECT s.SessionID, s.SessionDate, s.StartTime, a.ClassName as ActivityName, a.MaxCapacity, u.FullName as TrainerName, s.CurrentBookings
         FROM sessions s
         JOIN activities a ON s.ClassID = a.ClassID
         JOIN users u ON s.TrainerID = u.UserID
-        WHERE s.SessionDate = :date AND s.Status = 'scheduled'
-    ";
-    $params = [':date' => $date];
+        WHERE s.SessionDate = ? AND s.Status != 'cancelled'";
 
-    if (!empty($categoryId)) {
-        $sql .= " AND a.CategoryID = :category_id";
-        $params[':category_id'] = $categoryId;
-    }
+if ($categoryId) {
+    $sql .= " AND a.CategoryID = ?";
+    $params[] = $categoryId;
+}
 
-    if (!empty($difficulty)) {
-        $sql .= " AND a.DifficultyLevel = :difficulty";
-        $params[':difficulty'] = $difficulty;
-    }
+if ($difficulty) {
+    $sql .= " AND a.DifficultyLevel = ?";
+    $params[] = $difficulty;
+}
 
-    $sql .= " ORDER BY s.Time";
+$sql .= " ORDER BY s.StartTime";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

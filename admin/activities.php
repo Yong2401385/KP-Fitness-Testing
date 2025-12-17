@@ -67,6 +67,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['deactivate_activity'
     }
 }
 
+// Handle Delete Activity
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_activity'])) {
+    validate_csrf_token($_POST['csrf_token']);
+    $activityId = intval($_POST['activityId']);
+    
+    try {
+        // Check if activity has sessions
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM sessions WHERE ClassID = ?");
+        $stmt->execute([$activityId]);
+        $sessionCount = $stmt->fetchColumn();
+        
+        if ($sessionCount > 0) {
+            $feedback = ['type' => 'danger', 'message' => 'Cannot delete activity that has scheduled sessions. Please cancel or delete all sessions first.'];
+        } else {
+            $stmt = $pdo->prepare("DELETE FROM activities WHERE ClassID = ?");
+            if ($stmt->execute([$activityId])) {
+                $feedback = ['type' => 'success', 'message' => 'Activity deleted successfully.'];
+            }
+        }
+    } catch (PDOException $e) {
+        $feedback = ['type' => 'danger', 'message' => 'Database error: ' . $e->getMessage()];
+    }
+}
+
 
 // --- Fetch Data for Display ---
 try {
@@ -86,11 +110,15 @@ include 'includes/admin_header.php';
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+
     <h1 class="h2">Activity Management</h1>
+
 </div>
 
 
+
 <?php if (!empty($feedback)): ?>
+
     <div class="alert alert-<?php echo $feedback['type']; ?> alert-dismissible fade show" role="alert">
         <?php echo $feedback['message']; ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -98,84 +126,82 @@ include 'includes/admin_header.php';
 <?php endif; ?>
 
 <!-- Create/Edit Activity Form -->
-<div class="card mb-4">
-    <div class="card-header">
-        <?php echo $edit_activity ? 'Edit Activity' : 'Create New Activity'; ?>
-    </div>
-    <div class="card-body">
-        <form action="activities.php" method="POST">
-            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
-            <?php if ($edit_activity): ?>
-                <input type="hidden" name="activityId" value="<?php echo $edit_activity['ClassID']; ?>">
-            <?php endif; ?>
+<div class="mb-4">
+    <h3 class="mb-3"><?php echo $edit_activity ? 'Edit Activity' : 'Create New Activity'; ?></h3>
+    <form action="activities.php" method="POST">
+        <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
+        <?php if ($edit_activity): ?>
+            <input type="hidden" name="activityId" value="<?php echo $edit_activity['ClassID']; ?>">
+        <?php endif; ?>
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="activityName" class="form-label">Activity Name</label>
-                    <input type="text" class="form-control" id="activityName" name="activityName" value="<?php echo htmlspecialchars($edit_activity['ClassName'] ?? ''); ?>" required>
-                </div>
-                <div class="col-md-6">
-                    <label for="categoryId" class="form-label">Category</label>
-                    <select class="form-select" id="categoryId" name="categoryId" required>
-                        <option value="">-- Select Category --</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['CategoryID']; ?>" <?php echo (isset($edit_activity) && $edit_activity['CategoryID'] == $category['CategoryID']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($category['CategoryName']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="difficultyLevel" class="form-label">Difficulty Level</label>
-                    <select class="form-select" id="difficultyLevel" name="difficultyLevel" required>
-                        <option value="beginner" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'beginner') ? 'selected' : ''; ?>>Beginner</option>
-                        <option value="intermediate" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'intermediate') ? 'selected' : ''; ?>>Intermediate</option>
-                        <option value="advanced" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'advanced') ? 'selected' : ''; ?>>Advanced</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="duration" class="form-label">Duration (minutes)</label>
-                    <input type="number" class="form-control" id="duration" name="duration" value="<?php echo htmlspecialchars($edit_activity['Duration'] ?? ''); ?>" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="maxCapacity" class="form-label">Max Capacity</label>
-                    <input type="number" class="form-control" id="maxCapacity" name="maxCapacity" value="<?php echo htmlspecialchars($edit_activity['MaxCapacity'] ?? ''); ?>" required>
-                </div>
-                <div class="col-12">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="3" required><?php echo htmlspecialchars($edit_activity['Description'] ?? ''); ?></textarea>
-                </div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="activityName" class="form-label">Activity Name</label>
+                <input type="text" class="form-control" id="activityName" name="activityName" value="<?php echo htmlspecialchars($edit_activity['ClassName'] ?? ''); ?>" required>
             </div>
-            <div class="mt-3">
-                <button type="submit" name="save_activity" class="btn btn-primary"><?php echo $edit_activity ? 'Update Activity' : 'Create Activity'; ?></button>
-                <?php if ($edit_activity): ?>
-                    <a href="activities.php" class="btn btn-secondary">Cancel Edit</a>
-                <?php endif; ?>
+            <div class="col-md-6">
+                <label for="categoryId" class="form-label">Category</label>
+                <select class="form-select" id="categoryId" name="categoryId" required>
+                    <option value="">-- Select Category --</option>
+                    <?php foreach ($categories as $category): ?>
+                        <option value="<?php echo $category['CategoryID']; ?>" <?php echo (isset($edit_activity) && $edit_activity['CategoryID'] == $category['CategoryID']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($category['CategoryName']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-        </form>
-    </div>
+            <div class="col-md-4">
+                <label for="difficultyLevel" class="form-label">Difficulty Level</label>
+                <select class="form-select" id="difficultyLevel" name="difficultyLevel" required>
+                    <option value="beginner" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'beginner') ? 'selected' : ''; ?>>Beginner</option>
+                    <option value="intermediate" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'intermediate') ? 'selected' : ''; ?>>Intermediate</option>
+                    <option value="advanced" <?php echo (isset($edit_activity) && $edit_activity['DifficultyLevel'] === 'advanced') ? 'selected' : ''; ?>>Advanced</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="duration" class="form-label">Duration (minutes)</label>
+                <input type="number" class="form-control" id="duration" name="duration" value="<?php echo htmlspecialchars($edit_activity['Duration'] ?? ''); ?>" required>
+            </div>
+            <div class="col-md-4">
+                <label for="maxCapacity" class="form-label">Max Capacity</label>
+                <input type="number" class="form-control" id="maxCapacity" name="maxCapacity" value="<?php echo htmlspecialchars($edit_activity['MaxCapacity'] ?? ''); ?>" required>
+            </div>
+            <div class="col-12">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3" required><?php echo htmlspecialchars($edit_activity['Description'] ?? ''); ?></textarea>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="submit" name="save_activity" class="btn btn-primary"><?php echo $edit_activity ? 'Update Activity' : 'Create Activity'; ?></button>
+            <?php if ($edit_activity): ?>
+                <a href="activities.php" class="btn btn-secondary">Cancel Edit</a>
+            <?php endif; ?>
+        </div>
+    </form>
 </div>
 
 <!-- Activities List -->
-<div class="card">
-    <div class="card-header">
-        Existing Activities
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
+<div class="mb-4">
+    <h3 class="mb-3">Existing Activities</h3>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Duration</th>
+                    <th>Capacity</th>
+                    <th>Difficulty</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($activities)): ?>
                     <tr>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Duration</th>
-                        <th>Capacity</th>
-                        <th>Difficulty</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <td colspan="7" class="text-center">No activities found.</td>
                     </tr>
-                </thead>
-                <tbody>
+                <?php else: ?>
                     <?php foreach ($activities as $activity): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($activity['ClassName']); ?></td>
@@ -200,13 +226,14 @@ include 'includes/admin_header.php';
                                     <?php else: ?>
                                         <button type="submit" name="reactivate_activity" class="btn btn-success btn-sm">Reactivate</button>
                                     <?php endif; ?>
+                                    <button type="submit" name="delete_activity" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this activity? This action cannot be undone.');">Delete</button>
                                 </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 

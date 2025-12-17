@@ -15,7 +15,7 @@ $endDate = $_GET['end_date'];
 
 try {
     $stmt = $pdo->prepare("
-        SELECT r.ReservationID, s.SessionDate, s.Time, s.Room, a.ClassName as ActivityName, a.Description, c.CategoryName, a.DifficultyLevel, u.FullName as TrainerName
+        SELECT r.ReservationID, s.SessionDate, s.StartTime, s.Room, a.ClassName as ActivityName, a.Description, c.CategoryName, a.DifficultyLevel, u.FullName as TrainerName
         FROM reservations r
         JOIN sessions s ON r.SessionID = s.SessionID
         JOIN activities a ON s.ClassID = a.ClassID
@@ -24,7 +24,7 @@ try {
         WHERE r.UserID = ? 
         AND r.Status = 'booked' 
         AND s.SessionDate BETWEEN ? AND ?
-        ORDER BY s.SessionDate ASC, s.Time ASC
+        ORDER BY s.SessionDate ASC, s.StartTime ASC
     ");
     $stmt->execute([$userId, $startDate, $endDate]);
     $schedule = $stmt->fetchAll(PDO::FETCH_ASSOC);

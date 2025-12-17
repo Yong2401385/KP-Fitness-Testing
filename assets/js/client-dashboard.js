@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('../api/get_weight_history.php')
             .then(response => response.json())
             .then(data => {
-                const labels = data.map(item => new Date(item.CreatedAt).toLocaleDateString());
+                const labels = data.map(item => new Date(item.CreatedAt).toLocaleDateString('en-GB'));
                 const weights = data.map(item => item.Weight);
                 const height = window.dashboardConfig.userHeight;
                 const bmiData = weights.map(weight => {

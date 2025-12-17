@@ -31,12 +31,12 @@ if ($viewMode === 'session_list') {
 
         // Fetch sessions for the specific date
         $stmt = $pdo->prepare("
-            SELECT s.SessionID, s.SessionDate, s.Time, s.Room, s.CurrentBookings, s.Status,
+            SELECT s.SessionID, s.SessionDate, s.StartTime, s.Room, s.CurrentBookings, s.Status,
                    c.ClassName, c.MaxCapacity
             FROM sessions s
             JOIN activities c ON s.ClassID = c.ClassID
             WHERE s.TrainerID = ? AND s.SessionDate = ?
-            ORDER BY s.Time
+            ORDER BY s.StartTime
         ");
         $stmt->execute([$trainerId, $filterDate]);
         $filteredSessions = $stmt->fetchAll();
@@ -119,7 +119,7 @@ if ($viewMode === 'mark_attendance' || $viewMode === 'view_details') {
     try {
         // Get session details
         $stmt = $pdo->prepare("
-            SELECT s.SessionDate, s.Time, c.ClassName, s.SessionID
+            SELECT s.SessionDate, s.StartTime, c.ClassName, s.SessionID
             FROM sessions s JOIN activities c ON s.ClassID = c.ClassID 
             WHERE s.SessionID = ?
         ");
@@ -200,7 +200,7 @@ include 'includes/trainer_header.php';
                         <?php else: ?>
                             <?php foreach ($filteredSessions as $session): ?>
                                 <tr>
-                                    <td><strong><?php echo format_time($session['Time']); ?></strong></td>
+                                    <td><strong><?php echo format_time($session['StartTime']); ?></strong></td>
                                     <td><?php echo htmlspecialchars($session['ClassName']); ?></td>
                                     <td><?php echo htmlspecialchars($session['Room']); ?></td>
                                     <td>
@@ -245,14 +245,14 @@ include 'includes/trainer_header.php';
             <?php if($sessionDetails): ?>
                 <p class="text-muted">
                     <strong>Class:</strong> <?php echo htmlspecialchars($sessionDetails['ClassName']); ?> | 
-                    <strong>Date:</strong> <?php echo format_date($sessionDetails['SessionDate']); ?> at <?php echo format_time($sessionDetails['Time']); ?>
+                    <strong>Date:</strong> <?php echo format_date($sessionDetails['SessionDate']); ?> at <?php echo format_time($sessionDetails['StartTime']); ?>
                 </p>
             <?php endif; ?>
         </div>
         <?php 
         // Show session code if session is live
         if ($sessionDetails) {
-            $isLive = is_session_live($sessionDetails['SessionDate'], $sessionDetails['Time']);
+            $isLive = is_session_live($sessionDetails['SessionDate'], $sessionDetails['StartTime']);
             if ($isLive) {
                 $sessionCode = get_or_create_session_code($sessionDetails['SessionID'], $pdo);
                 if ($sessionCode) {
