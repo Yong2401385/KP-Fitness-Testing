@@ -16,7 +16,11 @@ if (!isset($_POST['csrf_token'])) {
     exit;
 }
 
-validate_csrf_token($_POST['csrf_token']);
+if (!validate_csrf_token($_POST['csrf_token'], true)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF validation failed.']);
+    exit;
+}
 
 // Helper function defined at the top scope
 function createBooking($pdo, $userId, $sessionId, $isRecurring, $recurrenceId, $parentReservationId, $paidAmount) {

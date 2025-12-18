@@ -19,6 +19,12 @@ $data = json_decode(file_get_contents('php://input'), true);
 $notificationId = $data['id'] ?? null;
 $userId = $_SESSION['UserID'];
 
+if (!validate_csrf_token($data['csrf_token'] ?? null, true)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF validation failed']);
+    exit;
+}
+
 if (!$notificationId) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Missing notification ID']);

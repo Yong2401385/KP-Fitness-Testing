@@ -8,30 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateStatsForm = document.getElementById('updateStatsForm');
 
         updateStatsBtn.addEventListener('click', () => {
-            // Pre-fill values from the display logic
-            // We look for the text immediately following the strong tag in the list items
+            // Pre-fill values from data attributes (Robust)
             const listItems = document.querySelectorAll('#health-stats-list li.list-group-item');
             
-            let currentHeight = '';
-            let currentWeight = '';
-
             if (listItems.length >= 2) {
-                // Helper to clean text: " 175 cm" -> "175"
-                const extractValue = (node) => {
-                    if (!node) return '';
-                    // Get the text content, remove "Height:" or "Weight:" labels just in case, then trim
-                    let text = node.textContent.replace(/(Height:|Weight:)/g, '').trim();
-                    // Extract the first number found
-                    const match = text.match(/(\d+(\.\d+)?)/);
-                    return match ? match[0] : '';
-                };
-
-                currentHeight = extractValue(listItems[0]);
-                currentWeight = extractValue(listItems[1]);
+                document.getElementById('stats-height').value = listItems[0].dataset.height || '';
+                document.getElementById('stats-weight').value = listItems[1].dataset.weight || '';
             }
-
-            document.getElementById('stats-height').value = currentHeight;
-            document.getElementById('stats-weight').value = currentWeight;
             
             updateStatsModal.show();
         });
@@ -56,9 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         const newWeight = formData.get('weight');
                         
                         if (listItems.length >= 3) {
-                            listItems[0].innerHTML = `<strong>Height:</strong> ${newHeight} cm`;
-                            listItems[1].innerHTML = `<strong>Weight:</strong> ${newWeight} kg`;
-                            listItems[2].innerHTML = `<strong>BMI:</strong> ${data.bmi} (${data.bmiCategory})`;
+                            // Update attributes
+                            listItems[0].dataset.height = newHeight;
+                            listItems[1].dataset.weight = newWeight;
+                            listItems[2].dataset.bmi = data.bmi;
+                            listItems[2].dataset.bmiCategory = data.bmiCategory;
+
+                            // Update Display
+                            listItems[0].innerHTML = `<strong>Height:</strong> <span>${newHeight} cm</span>`;
+                            listItems[1].innerHTML = `<strong>Weight:</strong> <span>${newWeight} kg</span>`;
+                            listItems[2].innerHTML = `<strong>BMI:</strong> <span>${data.bmi} (${data.bmiCategory})</span>`;
                         }
                         
                         // Update the BMI card at the top too if it exists

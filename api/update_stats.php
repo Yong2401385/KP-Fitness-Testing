@@ -16,7 +16,11 @@ if (!isset($_POST['csrf_token'])) {
     exit;
 }
 
-validate_csrf_token($_POST['csrf_token']);
+if (!validate_csrf_token($_POST['csrf_token'], true)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'CSRF validation failed.']);
+    exit;
+}
 
 $userId = $_SESSION['UserID'];
 $height = isset($_POST['height']) ? intval($_POST['height']) : null;

@@ -191,9 +191,9 @@ include 'includes/client_header.php';
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush" id="health-stats-list">
-                    <li class="list-group-item d-flex justify-content-between"><strong>Height:</strong> <?php echo htmlspecialchars($user['Height'] ?? 'N/A'); ?> cm</li>
-                    <li class="list-group-item d-flex justify-content-between"><strong>Weight:</strong> <?php echo htmlspecialchars($user['Weight'] ?? 'N/A'); ?> kg</li>
-                    <li class="list-group-item d-flex justify-content-between"><strong>BMI:</strong> <?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</li>
+                    <li class="list-group-item d-flex justify-content-between" data-height="<?php echo htmlspecialchars($user['Height'] ?? ''); ?>"><strong>Height:</strong> <span><?php echo htmlspecialchars($user['Height'] ?? 'N/A'); ?> cm</span></li>
+                    <li class="list-group-item d-flex justify-content-between" data-weight="<?php echo htmlspecialchars($user['Weight'] ?? ''); ?>"><strong>Weight:</strong> <span><?php echo htmlspecialchars($user['Weight'] ?? 'N/A'); ?> kg</span></li>
+                    <li class="list-group-item d-flex justify-content-between" data-bmi="<?php echo htmlspecialchars($bmi); ?>" data-bmi-category="<?php echo htmlspecialchars($bmiCategory); ?>"><strong>BMI:</strong> <span><?php echo $bmi; ?> (<?php echo $bmiCategory; ?>)</span></li>
                 </ul>
                 <canvas id="bmiChart" class="mt-3"></canvas>
                 <button id="update-stats-btn" class="btn btn-secondary mt-3">Update Stats</button>

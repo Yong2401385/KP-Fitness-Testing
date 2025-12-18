@@ -29,6 +29,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (empty($newDate) || empty($newTime)) {
                 throw new Exception("New date and time are required for rescheduling.");
             }
+            
+            $d = DateTime::createFromFormat('Y-m-d', $newDate);
+            if (!$d || $d->format('Y-m-d') !== $newDate) {
+                 throw new Exception("Invalid date format.");
+            }
+            
+            $rescheduleDateTime = new DateTime("$newDate $newTime");
+            $now = new DateTime();
+            
+            if ($rescheduleDateTime < $now) {
+                throw new Exception("Cannot reschedule to a past date or time.");
+            }
 
             // Update session with new StartTime and calculated EndTime
             // First, get duration to calculate EndTime

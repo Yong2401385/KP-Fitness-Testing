@@ -161,7 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ id: id })
+                    // Add CSRF token from global config
+                    body: JSON.stringify({ 
+                        id: id,
+                        csrf_token: window.clientConfig.csrfToken 
+                    })
                 }).then(() => {
                     if (link) window.location.href = link;
                 }).catch(err => {

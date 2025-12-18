@@ -6,39 +6,63 @@ $trainerId = $_SESSION['UserID'];
 $limitDate = date('Y-m-d', strtotime('-1 month'));
 
 try {
-    // 1. Fetch Sessions (Same logic as before)
+    // 1. Fetch All Data in One Query (Optimized)
     $stmt = $pdo->prepare("
-        SELECT s.SessionID, s.SessionDate, s.StartTime, c.ClassName, s.Status
+        SELECT 
+            s.SessionID, s.SessionDate, s.StartTime, s.Status AS SessionStatus,
+            c.ClassName,
+            r.ReservationID, r.Status AS BookingStatus,
+            u.FullName,
+            a.Status AS AttendanceStatus
         FROM sessions s
         JOIN activities c ON s.ClassID = c.ClassID
+        LEFT JOIN reservations r ON s.SessionID = r.SessionID
+        LEFT JOIN users u ON r.UserID = u.UserID
+        LEFT JOIN attendance a ON r.UserID = a.UserID AND s.SessionID = a.SessionID
         WHERE s.TrainerID = ? 
         AND s.SessionDate < CURDATE()
         AND s.SessionDate >= ?
-        ORDER BY s.SessionDate DESC, s.StartTime ASC
+        ORDER BY s.SessionDate DESC, s.StartTime ASC, u.FullName ASC
     ");
     $stmt->execute([$trainerId, $limitDate]);
-    $pastSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $allRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $groupedSessions = [];
-    foreach ($pastSessions as $session) {
-        $date = $session['SessionDate'];
+    foreach ($allRecords as $row) {
+        $date = $row['SessionDate'];
+        $sessionId = $row['SessionID'];
+
+        // Initialize Date Group
         if (!isset($groupedSessions[$date])) {
             $groupedSessions[$date] = [];
         }
-        
-        $stmtDetails = $pdo->prepare("
-            SELECT u.FullName, r.Status AS BookingStatus, a.Status AS AttendanceStatus
-            FROM reservations r
-            JOIN users u ON r.UserID = u.UserID
-            LEFT JOIN attendance a ON r.UserID = a.UserID AND r.SessionID = a.SessionID
-            WHERE r.SessionID = ?
-            ORDER BY u.FullName
-        ");
-        $stmtDetails->execute([$session['SessionID']]);
-        $session['records'] = $stmtDetails->fetchAll(PDO::FETCH_ASSOC);
-        
-        $groupedSessions[$date][] = $session;
+
+        // Initialize Session Group (keyed by ID temporarily to merge rows)
+        if (!isset($groupedSessions[$date][$sessionId])) {
+            $groupedSessions[$date][$sessionId] = [
+                'SessionID' => $sessionId,
+                'SessionDate' => $date,
+                'StartTime' => $row['StartTime'],
+                'ClassName' => $row['ClassName'],
+                'Status' => $row['SessionStatus'],
+                'records' => []
+            ];
+        }
+
+        // Add Attendee Record (if exists - LEFT JOIN might return nulls for reservation columns)
+        if ($row['ReservationID']) {
+            $groupedSessions[$date][$sessionId]['records'][] = [
+                'FullName' => $row['FullName'],
+                'BookingStatus' => $row['BookingStatus'],
+                'AttendanceStatus' => $row['AttendanceStatus']
+            ];
+        }
     }
+
+    // Re-index to remove SessionID keys if needed (though foreach handles keys fine)
+    // The previous structure was $groupedSessions[$date][] = $session. 
+    // Now it is $groupedSessions[$date][$sessionId] = $session.
+    // The view loop `foreach ($groupedSessions as $date => $sessions)` and `foreach ($sessions as $session)` works identical.
 
 } catch (PDOException $e) {
     echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';

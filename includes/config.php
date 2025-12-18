@@ -30,15 +30,20 @@ function generate_csrf_token() {
 
 /**
  * Validates a CSRF token from a form submission.
- * Dies with a fatal error if the token is invalid.
+ * Dies with a fatal error if the token is invalid, unless $returnBool is true.
  * @param string $token The token from the form.
+ * @param bool $returnBool If true, returns false on failure instead of dying.
+ * @return bool True if valid, false if invalid (when $returnBool is true).
  */
-function validate_csrf_token($token) {
+function validate_csrf_token($token, $returnBool = false) {
     if (!isset($token) || !hash_equals($_SESSION['csrf_token'], $token)) {
+        if ($returnBool) {
+            return false;
+        }
         // Token is invalid, stop the script
         die('CSRF validation failed.');
     }
-    // Token is valid
+    return true;
 }
 
 
