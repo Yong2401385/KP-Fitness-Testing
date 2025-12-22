@@ -1,0 +1,147 @@
+6.0 USER MANUAL
+
+This section provides a step-by-step guide for using the KP Fitness Class Reservation System. It is divided into three sections corresponding to the three user roles: Admin, Trainer, and Client.
+
+---
+
+6.1 GENERAL ACCESS
+
+1.  **Accessing the System:**
+    *   Open your web browser (Chrome, Edge, Firefox).
+    *   Navigate to the local URL: `http://localhost/KP_Fitness_Class_Reservation` (or your specific setup URL).
+    *   You will land on the **Homepage**.
+
+2.  **Public Navigation (Homepage):**
+    *   **Home:** View hero banner and intro.
+    *   **About:** Learn about KP Fitness history and trainers.
+    *   **Classes:** Browse available class types (Cardio, Strength, etc.).
+    *   **Login:** Click the "Login" button at the top right to access the system.
+    *   **Sign Up:** Click "Sign Up" to create a new Client account.
+
+---
+
+6.2 ADMIN MODULE
+*This module allows administrators to manage the entire system, including users, schedules, and reports.*
+
+**Login:** Use your Admin credentials (Default: `admin@kpfitness.com`).
+
+6.2.1 Admin Dashboard
+*   **Overview:** Upon login, you see the "Admin Dashboard" displaying real-time statistics:
+    *   Total Users, Active Trainers, Total Clients.
+    *   Active Activities, Scheduled Sessions, Monthly Revenue.
+*   **Quick Actions:** Use the large tiles for fast access to "Manage Users", "Schedule Sessions", or "View Reports".
+
+6.2.2 User Management
+1.  **Navigate:** Click "User Management" in the sidebar.
+2.  **View Users:** Click on the folder cards ("Administrators", "Trainers", "Clients") to view lists of users by role.
+3.  **Create Trainer:**
+    *   Click the orange "Create New Trainer" button at the top.
+    *   Fill in the form: Full Name, Email, Password, Gender, Specialist (e.g., HIIT), Working Hours, and Job Type.
+    *   Click "Create Trainer" to save.
+4.  **Edit User:** Click the "Edit" (pencil) icon next to any user to update their details or status.
+
+6.2.3 Activity Management
+1.  **Navigate:** Click "Activity Management".
+2.  **Create Activity:**
+    *   Fill in the "Create New Activity" form at the top.
+    *   Select Category, enter Name (e.g., "Advanced Yoga"), Duration (mins), Capacity, Price, and Description.
+    *   Click "Create Activity".
+3.  **Manage:** View the list of "Existing Activities" below. Use the "Edit" or "Deactivate" buttons to manage them.
+
+6.2.4 Session Scheduling
+1.  **Navigate:** Click "Session Scheduling".
+2.  **Schedule a Session:**
+    *   **Select Activity:** Choose a class type from the dropdown.
+    *   **Select Trainer:** Choose an available trainer.
+    *   **Set Details:** Pick the Date, Start Time, End Time, and Room.
+    *   Click "Schedule Session".
+3.  **View Calendar:** Scroll down to see the "Scheduled Sessions" calendar. Click "Next Month" to navigate dates.
+
+6.2.5 Reports & Analytics
+1.  **Navigate:** Click "Reports".
+2.  **View Charts:** Observe the "Monthly Revenue" bar chart and "Membership Distribution" pie chart.
+3.  **Export:**
+    *   Click "Generate PDF" to download a formatted report.
+    *   Click "Export CSV" for raw data analysis.
+
+6.2.6 Real-Time Activity
+1.  **Navigate:** Click "Real-Time Activity".
+2.  **Monitor:** View live dashboards for "New User Registrations", "Membership Purchases", and "New Bookings".
+3.  **Details:** Click the "Details" button on any card to see specific logs (e.g., who booked which class).
+
+---
+
+6.3 TRAINER MODULE
+*Designed for trainers to manage their schedule and class attendance.*
+
+**Login:** Use your Trainer credentials (Default: `john.doe@kpfitness.com`).
+
+6.3.1 Trainer Dashboard
+*   **Overview:** View your "Classes Today", "Total Bookings", and "Average Rating".
+*   **Today's Schedule:** A table list of all classes you are teaching today with Time, Class Name, and Room.
+
+6.3.2 My Schedule
+1.  **Navigate:** Click "My Schedule" in the sidebar.
+2.  **Calendar View:** See a monthly calendar of your assigned classes.
+3.  **Filter:** Use the date pickers to jump to specific months.
+
+6.3.3 Attendance Management
+1.  **Navigate:** Click "Attendance".
+2.  **Select Session:** Click on a specific class session from the list.
+3.  **Mark Attendance:**
+    *   You will see a list of registered clients.
+    *   Toggle the switch next to a client's name to mark them "Present" (Green) or "Absent" (Grey).
+    *   The system updates instantly.
+
+6.3.4 Trainer AI Assistant
+1.  **Access:** Click the orange "Trainer Assistant" bubble in the bottom right corner.
+2.  **Ask Questions:** Type queries like "What is my schedule today?" or "How many students in my 2 PM class?".
+3.  **Quick Chips:** Click suggested buttons like "Today's Schedule" for instant answers.
+
+---
+
+6.4 CLIENT MODULE
+*Allows members to book classes, track progress, and manage memberships.*
+
+**Login:** Use your Client credentials (Default: `client1@example.com`).
+
+6.4.1 Client Dashboard
+*   **Welcome:** See your summary stats (Upcoming Classes, Saved Workouts, BMI).
+*   **Complete Profile:** If it's your first time, a pop-up will ask you to complete your profile (Height, Weight, Goals).
+
+6.4.2 Booking a Class
+1.  **Navigate:** Click "Book Classes".
+2.  **Browse:** View the "Available Classes" list sorted by date.
+3.  **Book:**
+    *   Click the "Book" button next to a class.
+    *   Review the details (Time, Room, Price).
+    *   **Payment:** If you are a non-member or the class isn't covered, enter payment details (Simulated Credit Card).
+    *   Click "Confirm Booking".
+4.  **Cancel:** To cancel, find the class in your list and click "Cancel Booking".
+
+6.4.3 Membership Management
+1.  **Navigate:** Click "Membership".
+2.  **View Status:** See your "Current Plan" (e.g., 8 Class Membership) and "Expiry Date".
+3.  **Purchase/Upgrade:**
+    *   Click "Subscribe Membership".
+    *   Select a plan (e.g., "Unlimited Monthly").
+    *   Complete the payment process.
+
+6.4.4 AI Workout Planner
+1.  **Navigate:** Click "AI Workout Planner".
+2.  **Create Plan:**
+    *   Enter a "Plan Name".
+    *   Select your Goal (e.g., "Weight Loss") and Fitness Level.
+    *   Choose your preferred "Workout Days".
+    *   Click "Generate Plan".
+3.  **View & Save:** The AI will generate a routine. Click "Save Plan" to store it in your dashboard.
+
+6.4.5 Profile & Settings
+1.  **Navigate:** Click "My Profile".
+2.  **Edit Details:** Update your Phone, Height, Weight, or Profile Picture.
+3.  **Security:** Click "Change Password" to update your login credentials.
+
+6.4.6 Client Chatbot (KP Fitness Bot)
+1.  **Access:** Click the "KPF Bot" icon at the bottom right.
+2.  **Features:** Ask about "Membership prices", "Gym opening hours", or "My next class".
+3.  **Smart Context:** The bot knows your name and membership status for personalized answers.

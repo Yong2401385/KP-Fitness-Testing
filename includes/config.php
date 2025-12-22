@@ -6,7 +6,7 @@ require_once 'config.db.php';
 
 // --- SITE CONFIGURATION ---
 define('SITE_NAME', 'KP Fitness');
-define('SITE_URL', 'http://localhost/KP%20Testing'); // Adjust if your path is different
+define('SITE_URL', 'http://localhost/KP_Fitness_Class_Reservation'); // Adjust if your path is different
 
 // --- SESSION MANAGEMENT ---
 // Start the session if it's not already started

@@ -71,7 +71,7 @@ include 'includes/header.php';
     <div class="col-md-6 col-lg-5 col-xl-4">
         <div class="card mt-5">
             <div class="card-body p-4">
-                <h1 class="card-title text-center text-warning h3 mb-4">Member Login</h1>
+                <h1 class="card-title text-center text-warning h3 mb-4">User Login</h1>
 
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">

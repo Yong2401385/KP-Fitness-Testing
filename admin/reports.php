@@ -313,6 +313,33 @@ include 'includes/admin_header.php';
 </div>
 
 <div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Active Membership Distribution
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="membershipChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Most Popular Activities
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="popActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-12 mb-4">
         <div class="card">
             <div class="card-header">
@@ -398,33 +425,6 @@ include 'includes/admin_header.php';
                     <small class="text-muted me-3" style="font-size: 0.8rem;">Low Activity</small>
                     <div class="heatmap-legend-bar"></div>
                     <small class="text-muted ms-3" style="font-size: 0.8rem;">High Activity</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                Active Membership Distribution
-            </div>
-            <div class="card-body">
-                <div style="height: 300px;">
-                    <canvas id="membershipChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                Most Popular Activities
-            </div>
-            <div class="card-body">
-                <div style="height: 300px;">
-                    <canvas id="popActivityChart"></canvas>
                 </div>
             </div>
         </div>

@@ -289,18 +289,19 @@ require_once 'includes/config.php';
         bottom: 20px;
         right: 20px;
         z-index: 1000;
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
+        width: 140px; /* Wider for text */
+        height: 50px; /* Shorter for rectangle */
+        border-radius: 25px; /* Rounded rectangle */
         background-color: #ff8c00; /* Orange */
         color: white;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.8rem;
+        font-size: 1rem; /* Smaller font for text */
         cursor: pointer;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         transition: transform 0.2s ease-in-out;
+        padding: 0 15px; /* Add some horizontal padding */
     }
     .chatbot-bubble:hover {
         transform: scale(1.05);
@@ -310,8 +311,8 @@ require_once 'includes/config.php';
         bottom: 90px;
         right: 20px;
         z-index: 1000;
-        width: 350px;
-        height: 450px;
+        width: 450px;
+        height: 600px;
         background-color: white;
         border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -381,6 +382,32 @@ require_once 'includes/config.php';
         color: #333;
         align-self: flex-start;
         margin-right: auto;
+    }
+
+    /* Quick Action Chips */
+    .chatbot-chips {
+        padding: 5px 15px;
+        background-color: #f9f9f9;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        border-top: 1px solid #eee;
+        flex-shrink: 0;
+    }
+    .chip {
+        background-color: #fff;
+        border: 1px solid #ff8c00;
+        color: #ff8c00;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+    }
+    .chip:hover {
+        background-color: #ff8c00;
+        color: white;
     }
     </style>
 </head>
@@ -730,7 +757,7 @@ require_once 'includes/config.php';
 
 <!-- Chatbot Bubble -->
 <div class="chatbot-bubble" id="chatbot-bubble">
-    <i class="fas fa-comments"></i>
+    <i class="fas fa-robot me-2"></i> KPF Bot
 </div>
 
 <!-- Chatbot Window -->
@@ -742,6 +769,16 @@ require_once 'includes/config.php';
     <div class="chatbot-messages" id="chatbot-messages">
         <div class="message bot">Hello! How can I help you today?</div>
     </div>
+
+    <!-- Quick Action Chips -->
+    <div class="chatbot-chips" id="chatbot-chips">
+        <div class="chip" data-message="What are your membership plans?">💰 Membership Plans</div>
+        <div class="chip" data-message="What classes do you offer?">🏋️ View Classes</div>
+        <div class="chip" data-message="How do I join KP Fitness?">📝 How to Join</div>
+        <div class="chip" data-message="What are your operating hours?">🕒 Operating Hours</div>
+        <div class="chip" data-message="Where is the gym located?">📍 Gym Location</div>
+    </div>
+
     <div class="chatbot-input-area">
         <input type="text" id="chatbot-input" placeholder="Type your message...">
         <button id="chatbot-send"><i class="fas fa-paper-plane"></i></button>
@@ -773,6 +810,7 @@ require_once 'includes/config.php';
         const chatbotMessages = document.getElementById('chatbot-messages');
         const chatbotInput = document.getElementById('chatbot-input');
         const chatbotSend = document.getElementById('chatbot-send');
+        const chatbotChips = document.getElementById('chatbot-chips');
 
         chatbotBubble.addEventListener('click', () => {
             chatbotWindow.classList.toggle('d-none');
@@ -780,6 +818,15 @@ require_once 'includes/config.php';
 
         chatbotClose.addEventListener('click', () => {
             chatbotWindow.classList.add('d-none');
+        });
+
+        // Handle Chip Clicks
+        chatbotChips.addEventListener('click', (e) => {
+            if (e.target.classList.contains('chip')) {
+                const message = e.target.getAttribute('data-message');
+                chatbotInput.value = message;
+                sendMessage();
+            }
         });
 
         chatbotSend.addEventListener('click', sendMessage);
