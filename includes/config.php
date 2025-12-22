@@ -1,6 +1,9 @@
 <?php
 // config.php
 
+// Set default timezone
+date_default_timezone_set('Asia/Kuala_Lumpur');
+
 // --- DATABASE CONFIGURATION ---
 require_once 'config.db.php';
 

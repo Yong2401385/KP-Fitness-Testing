@@ -125,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     5. ACTION INSTRUCTIONS:
        - If the user explicitly asks to go to a page (e.g., \"Take me to...\", \"Open...\", \"Go to...\"), use this format at the end: [NAVIGATE:URL]
        - If you are just recommending a page or suggesting an action, use the button format: [BUTTON:Label|URL]
+       - **CRITICAL:** Do NOT generate, invent, or hallucinate any other URLs (like meal plans, nutrition pages, etc.). If a requested page is not in the list above, apologize and say you cannot link to it.
     6. WORKOUT GENERATION:
        - If the trainer asks for workout ideas, class plans, or circuit routines, generate a structured, professional plan.
        - Use clear formatting (bullet points, time/reps).
